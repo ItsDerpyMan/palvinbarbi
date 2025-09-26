@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Would You Ratherd</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .username-input {
+            margin: 20px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .room-section {
+            margin: 20px 0;
+            display: none;
+            /* Hidden until rooms are fetched */
+        }
+
+        .room-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .room-list li {
+            padding: 10px;
+            background: #f0f0f0;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Would You Rather</h1>
+        <input type="text" class="username-input" placeholder="Enter your username" id="username">
+        <div class="room-section" id="roomSection">
+            <h3>Available Rooms</h3>
+            <ul class="room-list" id="roomList"></ul>
+        </div>
+        <button id="joinRoomBtn">Join Room</button>
+        <button id="createRoomBtn">Create Room</button>
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>
