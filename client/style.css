@@ -1,0 +1,99 @@
+body{
+    background-color: rgb(51, 51, 51);
+}
+
+h1{
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
+    font-size: 3em;
+    user-select: none;
+    
+}
+
+
+#would{
+    color: red;
+    animation-name: would;
+    animation-duration: 2.5s;
+    animation-iteration-count: infinite;
+    display: inline-block;
+    
+}
+
+@keyframes would {
+    0%{color: red; transform: scale(1.1);}
+    50%{color: blue; transform: scale(1);}
+    100%{color: red; transform: scale(1.1);}
+}
+
+#rather{
+    color: blue;
+    animation-name: rather;
+    animation-duration: 2.5s;
+    animation-iteration-count: infinite;
+    display: inline-block;
+    
+}
+
+@keyframes rather {
+    0%{color: blue;  transform: scale(1);}
+    50%{color: red ; transform: scale(1.1);}
+    100%{color: blue;  transform: scale(1);}
+}
+
+#buttons{
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
+}
+
+button{
+    width: 8em;
+    height: 2em;
+    font-size: larger;
+    user-select: none;
+}
+button:hover{
+    transition-duration: 0.1s;
+    transform: scale(1.08);
+}
+
+input{
+    height: 1.5em;
+    font-size: larger;
+}
+
+
+#roomcreate{
+    margin-left:26%;
+ }
+
+
+div{
+    user-select: none;
+}
+#you{
+    display: inline-block;
+    animation-name: you;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-duration: 2.5s;
+}
+@keyframes you {
+    0%{transform: rotate(-8deg);}
+    50%{transform: rotate(16deg);}
+    100%{transform: rotate(-8deg);}
+}
+
+@media (max-width: 422px){
+    
+    button{
+        margin-left: 26%;
+        }
+        input{
+            margin-left: 14%;
+        }
+
+
+}
