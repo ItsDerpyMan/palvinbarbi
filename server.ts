@@ -5,6 +5,44 @@ import { keypress, KeyPressEvent } from "@cliffy/keypress";
 import { iterId, Room, Rooms } from "./server/rooms.ts";
 import * as log from "@std/log";
 
+const ROOMS: Rooms = new Rooms();
+const ROUTES: Route[] = [
+  {
+    pattern: new URLPattern({ pathname: "/users/:user" }),
+    handler: (_req: Request, match: URLPatternResult) => {
+      console.log(`user: ${match.pathname.groups.user}`);
+      return new Response("ok"); // <== added
+    },
+  },
+  {
+    pattern: new URLPattern({ pathname: "/rooms/:id" }),
+    handler: (req: Request, match: URLPatternResult) =>
+      upgradeRoomWebSocket(req, match.pathname.groups.id),
+  },
+  {
+    pattern: new URLPattern({ pathname: "/rooms" }),
+    handler: (_req: Request, _match: URLPatternResult) => getRooms(),
+  },
+  {
+    pattern: new URLPattern({ pathname: "/home" }),
+    handler: (req: Request, _match: URLPatternResult) => getHomePage(req),
+  },
+  {
+    pattern: new URLPattern({ pathname: "/favicon.ico" }),
+    handler: (_req: Request, _match: URLPatternResult) => {
+      return new Response(null, { status: 204 });
+    },
+  },
+];
+type Handler = (
+  req: Request,
+  match: URLPatternResult,
+) => Response | Promise<Response>;
+
+interface Route {
+  pattern: URLPattern;
+  handler: Handler;
+}
 export async function waitTillEnter(): Promise<void> {
   console.log("Press <Enter> to continue.");
 
@@ -39,11 +77,11 @@ async function main(): Promise<void> {
     switch (result) {
       case "new-room": {
         const room = new Room(id);
-        rooms.push(room);
+        ROOMS.push(room);
         break;
       }
       case "list-rooms": {
-        for (const room of rooms) {
+        for (const room of ROOMS) {
           console.log(room.toString());
         }
         await waitTillEnter();
@@ -66,9 +104,7 @@ async function main(): Promise<void> {
       .eraseScreen();
   }
 }
-const ROOMS: Rooms = new Rooms();
-
-async function getRooms(_req: Request): Promise<Response> {
+async function getRooms(): Promise<Response> {
   const room_data = ROOMS.getRooms();
   return new Response(room_data, {
     headers: { "Content-Type": "application/json" },
@@ -93,37 +129,17 @@ async function upgradeRoomWebSocket(
 
   return response;
 }
-const ROUTES = [
-    {
-        pattern: new URLPattern({ pathname: "/users/:user" }),
-        handler: (match: URLPatternResult) => userHandler();
-    },
-    {
-        pattern: new URLPattern({ pathname: "/rooms/:id" }),
-        handler: (match: URLPatternResult) => upgradeRoomWebSocket();
-    },
-    {
-        pattern: new URLPattern({ pathname: "/rooms" }),
-        handler: (_match: URLPatternResult) => getRooms();
-    },
-    {
-        pattern: new URLPattern({ pathname: "/home" }),
-        handler: (_match: URLPatternResult) => getHomePage();
-    },
-    {
-        pattern: new URLPattern({ pathname: "/favicon.ico" }),
-        handler: (_match: URLPatternResult) => {
-            return new Response(null, { status: 204 });
-        }},
-];
-
-Deno.serve(async (req: Request) => {
+async function getHomePage(req: Request): Promise<Response> {
+  return await serveFile(req, "./client/index.html");
+}
+Deno.serve(async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
 
-  for (const route of routes) {
+  for (const route of ROUTES) {
     if (route.pattern.test(url)) {
-        const match = route.pattern.exec(url);
-        return route.handler(match);
+      const match = route.pattern.exec(url);
+      if (match === null) break;
+      return route.handler(req, match);
     }
   }
 
@@ -141,6 +157,5 @@ Deno.serve(async (req: Request) => {
   log.debug(`Response: ${body}`);
   return new Response(body, { status: res.status, headers });
 });
-
 
 main();
