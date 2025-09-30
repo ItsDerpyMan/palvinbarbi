@@ -1,4 +1,5 @@
 import { createDefine } from "fresh";
+import { signal} from "@preact/signals"
 const DB_PATH = "./db/rooms.json";
 
 export interface Room {
@@ -47,5 +48,5 @@ export class Timer {
 export interface State {
   shared: string;
 }
-
+export const baseUrl = signal<string>("");
 export const define = createDefine<State>();
