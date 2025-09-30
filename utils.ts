@@ -1,5 +1,21 @@
 import { createDefine } from "fresh";
+const DB_PATH = "./db/rooms.json";
 
+export interface Room {
+    hasStarted: boolean;
+    players: string[];
+    created: number;
+}
+// Read entire DB
+export async function readDB(): Promise<Record<number, Room>> {
+  const text = await Deno.readTextFile(DB_PATH);
+  return JSON.parse(text) as Record<number, Room>;
+}
+
+// Write entire DB
+export async function writeDB(data: Record<number, Room>) {
+  await Deno.writeTextFile(DB_PATH, JSON.stringify(data, null, 2));
+}
 export class Timer {
   private callback: () => void;
   private duration: number;
