@@ -95,6 +95,7 @@ async function main(): Promise<void> {
         break;
       }
       case "stop": {
+        Deno.exit()
         break;
       }
     }
