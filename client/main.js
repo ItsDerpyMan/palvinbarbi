@@ -7,8 +7,8 @@ async function getRoomsData() {
     }
 
     const result = await response.json();
-    console.log(result);
-  } catch (error) {
+    
+    } catch (error) {
     console.error(error.message);
   }
 }
@@ -34,3 +34,9 @@ retriveRoomData.prototype.stop = function () {
 };
 const _get = new retriveRoomData(1, () => getRoomsData());
 _get.start();
+
+
+
+
+
+
