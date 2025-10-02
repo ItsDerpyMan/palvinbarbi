@@ -1,7 +1,7 @@
 // api/[id].ts
 import { define, readDB, Room } from "../../utils.ts";
 //JSON Database
-const PATH = "../../db/rooms.json"
+const PATH = "../../data/rooms.json";
 
 export const handler = define.handlers({
   async GET(ctx) {
