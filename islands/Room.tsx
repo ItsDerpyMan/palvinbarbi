@@ -1,31 +1,33 @@
-import { Signal, useSignal, ReadonlySignal, computed } from "@preact/signals";
+import { computed, ReadonlySignal, Signal, useSignal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { Room } from "../utils";
 import { Button } from "../components/Button";
 import { PlayerCount } from "../components/PlayerCount";
+import { TimeStamp } from "../components/TimeStamp.tsx";
 
 type Rooms = Record<string, Room>;
 
 export interface RoomProps {
   key?: string;
   id: string;
-  ROOMS: Signal<Rooms>;
+  rooms: Signal<Rooms>;
 }
 
-export default function RoomIsland({ id, ROOMS }: RoomProps) {
-  const room = ROOMS.value[id];
+export default function RoomIsland({ id, rooms }: RoomProps) {
+    console.log("Rendering RoomIsland for ID:", id);
+  const room = rooms.value[id];
   if (!room) {
-    return <div>{ id } ID Room not found</div>;
+    return <div>{id} ID Room not found</div>;
   }
-  export const playerCount: ReadonlySignal<number> = computed(() => {
+  const playerCount: ReadonlySignal<number> = computed(() => {
     return room.players.length;
-  })
+  });
   function addPlayer(name: string) {
-    ROOMS.value = {
-      ...ROOMS.value,
+    rooms.value = {
+      ...rooms.value,
       [id]: {
-        ...ROOMS.value[id],
-        players: [...ROOMS.value[id].players, name],
+        ...rooms.value[id],
+        players: [...rooms.value[id].players, name],
       },
     };
   }
@@ -37,15 +39,18 @@ export default function RoomIsland({ id, ROOMS }: RoomProps) {
         <span class="text-sm text-gray-500">{id}</span>
       </div>
 
-      <div class="flex justify-between items-center">
-        <Button
-          onClick={() => {
-            addPlayer("test");
-          }}
-        >
-          Add Player
-        </Button>
-        <PlayerCount count={playerCount}/>
+      <div class="flex justify-space-between items-center">
+          <div class="flex items-center space-x-2">
+            <Button  className={"hover:bg-gray-200"}
+              onClick={() => {
+                addPlayer("test");
+              }}>
+              Join
+              </Button>
+              <TimeStamp className="items-center self-start bg-gray-50 rounded" time={room.created} />
+          </div>
+
+        <PlayerCount count={playerCount} />
       </div>
     </div>
   );
