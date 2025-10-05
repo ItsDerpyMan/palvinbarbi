@@ -4,10 +4,10 @@ import { define } from "../../utils";
 import HomePage from "../index";
 
 export const handler = define.handlers({
-  async GET(ctx) {
+  async GET(_ctx) {
     const json = Deno.readTextFileSync(Deno.cwd() + "/data/rooms.json");
     const rooms = json.length > 0 ? JSON.parse(json) : {};
-    return { data: (rooms) };
+    return { data: rooms };
   },
 });
 

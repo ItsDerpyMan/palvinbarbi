@@ -1,27 +1,26 @@
-import { computed, ReadonlySignal, Signal, useSignal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
+import { Signal, useComputed } from "@preact/signals";
 import { Room } from "../utils";
-import { Button } from "../components/Button";
 import { PlayerCount } from "../components/PlayerCount";
 import { TimeStamp } from "../components/TimeStamp.tsx";
 
 type Rooms = Record<string, Room>;
 
-export interface RoomProps {
+interface RoomProps {
   key?: string;
   id: string;
   rooms: Signal<Rooms>;
 }
 
 export default function RoomIsland({ id, rooms }: RoomProps) {
-    console.log("Rendering RoomIsland for ID:", id);
-  const room = rooms.value[id];
+  console.log("Rendering RoomIsland for ID:", id);
+  const room = useComputed(() => rooms.value[id]);
   if (!room) {
     return <div>{id} ID Room not found</div>;
   }
-  const playerCount: ReadonlySignal<number> = computed(() => {
-    return room.players.length;
+  const playerCount = useComputed(() => {
+    room.value?.players.length || 0;
   });
+  console.log(`Rendering PlayerCount ${room.value}`);
   function addPlayer(name: string) {
     rooms.value = {
       ...rooms.value,
@@ -40,17 +39,20 @@ export default function RoomIsland({ id, rooms }: RoomProps) {
       </div>
 
       <div class="flex justify-space-between items-center">
-          <div class="flex items-center space-x-2">
-            <Button  className={"hover:bg-gray-200"}
-              onClick={() => {
-                addPlayer("test");
-              }}>
-              Join
-              </Button>
-              <TimeStamp className="items-center self-start bg-gray-50 rounded" time={room.created} />
-          </div>
+        <div class="flex items-center space-x-2">
+          <button
+            class={"px-2 py-1 border-gray-500 border-2 rounded-sm bg-white hover:bg-gray-200 transition-colors"}
+            onClick={() => addPlayer("test")}
+          >
+            Join
+          </button>
+          <TimeStamp
+            class="items-center self-start bg-gray-50 rounded"
+            time={room.value.created}
+          />
+        </div>
 
-        <PlayerCount count={playerCount} />
+        <PlayerCount count={playerCount.value} />
       </div>
     </div>
   );

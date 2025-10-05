@@ -1,19 +1,13 @@
 // api/[id]/players.ts
-import { define, readDB } from "../../../utils.ts";
+import { define } from "../../../utils.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {
-    const result = ctx.req.headers.get("accept") ?? "";
-    if (result.includes("application/json")) {
-      const list_of_rooms = await readDB();
-      const data = list_of_rooms[ctx.params.id]["players"].length;
-      return new Response(data, {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    return new Response(null, {
-      status: 302,
-      headers: { Location: "/" },
+    const json = Deno.readTextFileSync(Deno.cwd() + "/data/rooms.json");
+    const rooms = json.length > 0 ? JSON.parse(json) : {};
+    const players = rooms[ctx.params.id].players;
+    return new Response(JSON.stringify(players), {
+      headers: { "Content-Type": "application/json" },
     });
   },
 });

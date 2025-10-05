@@ -1,20 +1,13 @@
 // api/[id]/has_started.ts
-import { define, readDB } from "../../../utils.ts";
-//JSON Database
+import { define } from "../../../utils.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {
-    const result = ctx.req.headers.get("accept") ?? "";
-    if (result.includes("application/json")) {
-      const list_of_rooms = await readDB();
-      const data = list_of_rooms[ctx.params.id]["hasStarted"];
-      return new Response(data, {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    return new Response(null, {
-      status: 302,
-      headers: { Location: "/" },
+    const json = Deno.readTextFileSync(Deno.cwd() + "/data/rooms.json");
+    const rooms = json.length > 0 ? JSON.parse(json) : {};
+    const bool = rooms[ctx.params.id].has_started;
+    return new Response(JSON.stringify(bool), {
+      headers: { "Content-Type": "application/json" },
     });
   },
 });

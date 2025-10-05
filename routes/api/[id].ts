@@ -1,37 +1,13 @@
 // api/[id].ts
-import { define, readDB, Room } from "../../utils.ts";
-//JSON Database
-const PATH = "../../data/rooms.json";
+import { define } from "../../utils.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {
-    const result = ctx.req.headers.get("accept") ?? "";
-    if (result.includes("application/json")) {
-      const list_of_rooms = await readDB() as any;
-      const data = list_of_rooms[ctx.params.id];
-      data["numberOfPlayers"] = data.players.length;
-      delete data.players;
-      return new Response(data, {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    return new Response(null, {
-      status: 302,
-      headers: { Location: "/" },
+    const json = Deno.readTextFileSync(Deno.cwd() + "/data/rooms.json");
+    const rooms = json.length > 0 ? JSON.parse(json) : {};
+    const room = rooms[ctx.params.id];
+    return new Response(JSON.stringify(room), {
+      headers: { "Content-Type": "application/json" },
     });
-  },
-  async POST(ctx) {
-    const newRoom: Room = await ctx.req.json();
-
-    // read existing rooms
-    const rooms: Room[] = JSON.parse(Deno.readTextFileSync(PATH));
-
-    // add new room
-    rooms.push(newRoom);
-
-    // write back to file
-    Deno.writeTextFileSync(PATH, JSON.stringify(rooms, null, 2));
-
-    return new Response(JSON.stringify(newRoom), { status: 201 });
   },
 });
