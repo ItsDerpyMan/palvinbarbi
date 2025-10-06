@@ -1,7 +1,8 @@
-import { Signal, useComputed } from "@preact/signals";
+import { Signal} from "@preact/signals";
 import { Room } from "../utils";
 import { PlayerCount } from "../components/PlayerCount";
 import { TimeStamp } from "../components/TimeStamp.tsx";
+import { Button } from "../components/Button.tsx";
 
 type Rooms = Record<string, Room>;
 
@@ -12,15 +13,13 @@ interface RoomProps {
 }
 
 export default function RoomIsland({ id, rooms }: RoomProps) {
-  console.log("Rendering RoomIsland for ID:", id);
-  const room = useComputed(() => rooms.value[id]);
+  const room = rooms.value[id];
   if (!room) {
     return <div>{id} ID Room not found</div>;
   }
-  const playerCount = useComputed(() => {
-    room.value?.players.length || 0;
-  });
-  console.log(`Rendering PlayerCount ${room.value}`);
+  const playerCount = room.players.length;
+  const time = room.created;
+
   function addPlayer(name: string) {
     rooms.value = {
       ...rooms.value,
@@ -40,19 +39,10 @@ export default function RoomIsland({ id, rooms }: RoomProps) {
 
       <div class="flex justify-space-between items-center">
         <div class="flex items-center space-x-2">
-          <button
-            class={"px-2 py-1 border-gray-500 border-2 rounded-sm bg-white hover:bg-gray-200 transition-colors"}
-            onClick={() => addPlayer("test")}
-          >
-            Join
-          </button>
-          <TimeStamp
-            class="items-center self-start bg-gray-50 rounded"
-            time={room.value.created}
-          />
+          <Button id={"joinButton"} onClick={() => addPlayer("test")}>Join</Button>
+          <TimeStamp class="items-center self-start bg-gray-50 rounded" time={time}/>
         </div>
-
-        <PlayerCount count={playerCount.value} />
+        <PlayerCount count={playerCount} />
       </div>
     </div>
   );

@@ -11,11 +11,11 @@ export const handler = define.handlers({
   },
 });
 
-export default function RoomsPage({ data }) {
+export default define.page(function RoomsPage({ data }) {
   return (
     <HomePage>
       <h1>Rooms</h1>
       <Rooms data={data} />
     </HomePage>
   );
-}
+})
