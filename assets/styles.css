@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@tailwind components;
+@tailwind base;
+@tailwind utilities;
+
 .fresh-gradient {
   background-color: rgb(134, 239, 172);
   background-image: linear-gradient(
@@ -7,4 +11,35 @@
     rgb(187, 247, 208),
     rgb(254, 249, 195)
   );
+}
+@layer components {
+  .join-button {
+    @apply px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold
+    hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400
+    transition-colors duration-200;
+  }
+  .dark .join-button {
+    @apply bg-blue-800 text-gray-100 hover:bg-blue-900 focus:ring-blue-600;
+  }
+  .timestamp {
+    @apply items-center self-start bg-gray-50 rounded;
+  }
+  .player-count {
+    @apply inline-flex items-center px-3 py-1 rounded-full border border-gray-400 bg-white text-sm font-medium text-gray-700;
+  }
+  .dark .player-count {
+    @apply text-gray-300;
+  }
+  .dark .timestamp {
+    @apply text-gray-400;
+  }
+  .card {
+    @apply w-full max-w-md bg-white rounded-xl shadow-md p-4 flex flex-col space-y-2;
+  }
+  .card:hover {
+    @apply shadow-lg scale-105 transition-shadow duration-300;
+  }
+  .dark .card {
+    @apply bg-gray-800 shadow-gray-900;
+  }
 }

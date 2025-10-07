@@ -1,11 +1,12 @@
 interface PlayerCountProps {
   count: number;
+  id?: string;
+  class?: string;
 }
 
-export function PlayerCount({ count }: PlayerCountProps) {
-
+export function PlayerCount({ count, ...props }: PlayerCountProps) {
   return (
-    <div class="inline-flex items-center px-3 py-1 rounded-full border border-gray-400 bg-white text-sm font-medium text-gray-700">
+    <div id={props.id} class={props.class}>
       {count} / {20}
     </div>
   );

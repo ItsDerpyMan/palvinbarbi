@@ -1,7 +1,7 @@
 // api/rooms.ts
-import Rooms from "../../islands/Rooms";
-import { define } from "../../utils";
-import HomePage from "../index";
+import Rooms from "../../islands/Rooms.tsx";
+import { define } from "../../utils.ts";
+import HomePage from "../index.tsx";
 
 export const handler = define.handlers({
   async GET(_ctx) {

@@ -1,10 +1,8 @@
 import { Signal} from "@preact/signals";
-import { Room } from "../utils";
-import { PlayerCount } from "../components/PlayerCount";
+import { Room, Rooms } from "../utils.ts";
+import { PlayerCount } from "../components/PlayerCount.tsx";
 import { TimeStamp } from "../components/TimeStamp.tsx";
 import { Button } from "../components/Button.tsx";
-
-type Rooms = Record<string, Room>;
 
 interface RoomProps {
   key?: string;
@@ -31,19 +29,21 @@ export default function RoomIsland({ id, rooms }: RoomProps) {
   }
 
   return (
-    <div class="w-full max-w-md bg-white rounded-xl shadow-md p-4 flex flex-col space-y-2">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-semibold truncate">Room</h2>
-        <span class="text-sm text-gray-500">{id}</span>
-      </div>
-
-      <div class="flex justify-space-between items-center">
-        <div class="flex items-center space-x-2">
-          <Button id={"joinButton"} onClick={() => addPlayer("test")}>Join</Button>
-          <TimeStamp class="items-center self-start bg-gray-50 rounded" time={time}/>
+      <div class="card">
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-semibold truncate">Room</h2>
+          <span class="text-sm text-gray-500">{id}</span>
         </div>
-        <PlayerCount count={playerCount} />
+
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <Button id="joinButton" class="join-button" onClick={() => addPlayer("test")}>
+              Join
+            </Button>
+            <TimeStamp id="buttonTimestamp" class="timestamp" time={time} />
+          </div>
+          <PlayerCount count={playerCount} class="player-count" />
+        </div>
       </div>
-    </div>
   );
 }
