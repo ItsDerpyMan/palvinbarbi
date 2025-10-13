@@ -1,5 +1,5 @@
 import { ComponentChildren } from "preact";
-import { define } from "../utils";
+import { define } from "../utils/utils.ts";
 
 interface HomePageProps {
   children?: ComponentChildren;
@@ -13,4 +13,4 @@ export default define.page(function HomePage({ children }: HomePageProps) {
       </section>
     </main>
   );
-})
+});
