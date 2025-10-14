@@ -1,5 +1,5 @@
 import { createDefine } from "fresh";
-import { supabase } from "./database.ts";
+import { database } from "./database.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
 
 export interface State {
@@ -14,7 +14,7 @@ export const checkSession = define.middleware(async (ctx) => {
   const sessionId = cookies["session_id"];
 
   if (sessionId) {
-    const { data: sessionData } = await supabase
+    const { data: sessionData } = await database
       .from("sessions")
       .select("*")
       .eq("id", sessionId)
@@ -34,7 +34,7 @@ export const ensureUser = define.middleware(async (ctx) => {
   const username = formData.get("username")?.toString().trim().toLowerCase();
   if (!username) throw new Error("Username is required");
 
-  const { data: userData, error } = await supabase
+  const { data: userData, error } = await database
     .from("users")
     .insert({ username })
     .select("*")
@@ -47,7 +47,7 @@ export const ensureUser = define.middleware(async (ctx) => {
 });
 
 export const createSession = define.middleware(async (ctx) => {
-  const { data: sessionData, error } = await supabase
+  const { data: sessionData, error } = await database
     .from("sessions")
     .insert({ room_id: ctx.params.id, user_id: ctx.state.userId })
     .select("*")

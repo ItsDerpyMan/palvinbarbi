@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./supabase.ts";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY");
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+const supabaseUrl = Deno.env.get("FRESH_PUBLIC_SUPABASE_URL");
+const supabaseKey = Deno.env.get("FRESH_PUBLIC_SUPABASE_ANON_KEY");
+export const database = createClient<Database>(supabaseUrl, supabaseKey);
 
 export type Room = {
   id: string;

@@ -1,13 +1,13 @@
 // api/rooms.ts
 import { define } from "../../utils/utils.ts";
-import { supabase } from "../../utils/database.ts";
+import { database } from "../../utils/database.ts";
 import HomePage from "../index.tsx";
 import RoomIsland from "../../islands/Room.tsx";
 import Username from "../../islands/Username.tsx";
 import MyIsland from "../../islands/my-island.tsx";
 export const handler = define.handlers({
   async GET(_ctx) {
-    const { data, error } = await supabase.from("rooms").select("*");
+    const { data, error } = await database.from("rooms").select("*");
     if (!error) {
       return { data: data ?? [] };
     }
