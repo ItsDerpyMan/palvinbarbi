@@ -1,15 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./supabase.ts";
 
-const supabaseUrl = Deno.env.get("FRESH_PUBLIC_SUPABASE_URL");
-const supabaseKey = Deno.env.get("FRESH_PUBLIC_SUPABASE_ANON_KEY");
-export const database = createClient<Database>(supabaseUrl, supabaseKey);
-
+const supabaseUrl = Deno.env.get("HEAD_SUPABASE_URL");
+const supabaseKey = Deno.env.get("HEAD_SUPABASE_ANON_KEY");
+export function getDatabase(jwt?: string) {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
+    global: {
+      headers: {
+        Authorization: jwt ? `Bearer ${jwt}` : undefined,
+      },
+    },
+  });
+}
 export type Room = {
   id: string;
   name: string;
-  is_active: boolean;
-  created_at: string; // timestamps are returned as strings
+  join_code: string;
+  created_at: string;
 };
 
 export interface Session {

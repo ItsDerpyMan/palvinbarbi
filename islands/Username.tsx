@@ -1,23 +1,20 @@
-import { useState } from "preact/hooks";
+import { useEffect } from "preact/hooks";
+import type { Signal} from "@preact/signals";
+
 
 interface UsernameInputProps {
   id?: string;
   class?: string;
+  username?: Signal<string>;
 }
 
-export default function UsernameInput({ ...props }: UsernameInputProps) {
-    const [username, set_username] = useState<string>(localStorage.getItem("username") ?? "");
-    const handleInput = (e: Event) => {
-        const value = (e.target as HTMLInputElement).value;
-        set_username(value);
-        localStorage.setItem("username", value);
-    };
+export default function UsernameInput({username, ...props }: UsernameInputProps) {
   return (
-    <form id={props.id} class={props.class}>
+    <form onsubmit={(e) => e.preventDefault()} id={props.id} class={props.class}>
       <input
         type="text"
         value={username}
-        onInput={handleInput}
+        onInput={(e) => (username.value = (e.target as HTMLInputElement).value)}
         placeholder="Enter username"
       />
     </form>
