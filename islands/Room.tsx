@@ -1,11 +1,10 @@
-import { useEffect, useRef } from "preact/hooks";
-import { useSignal } from "@preact/signals";
+import { Signal, useSignal } from "@preact/signals";
 import { Button } from "../components/Button.tsx";
 import { TimeStamp } from "../components/TimeStamp.tsx";
 import { PlayerCount } from "../components/PlayerCount.tsx";
-import type { Room } from "../utils/database.ts";
-import { database } from "../utils/database.ts";
-import { createClient, RealtimeChannel } from "@supabase/supabase-js";
+import type { Room } from "../utils/database/database.ts";
+import { useEffect } from "preact/hooks";
+
 interface RoomProps {
   key?: string;
   id?: string;
@@ -13,9 +12,12 @@ interface RoomProps {
   input: Signal<string>;
 }
 export default function RoomIsland({ data, input }: RoomProps) {
-  const room = useSignal({ ...data, created_at: data.created_at.toString() });
+  const room = useSignal(data);
   const count = useSignal<number>(0);
 
+  useEffect(() => {
+    console.log(`User ${input.value} joined ${data.name}`);
+  }, [input]);
   const handleJoin = async () => {
     if (!input.value.trim()) {
       alert("Please enter a username!");
@@ -25,7 +27,7 @@ export default function RoomIsland({ data, input }: RoomProps) {
     const formData = new FormData();
     formData.append("username", input.value);
 
-    console.log(`POST req: /api/rooms/${data.id}`)
+    console.log(`POST req: /api/rooms/${data.id}`);
     const res = await fetch(`/api/rooms/${data.id}`, {
       method: "POST",
       body: formData,
@@ -35,49 +37,8 @@ export default function RoomIsland({ data, input }: RoomProps) {
       console.error("Failed:", await res.text());
       return;
     }
-
-    console.log(`User ${input.value} joined ${data.name}`);
   };
-  //
-  // const channelRef = useRef<RealtimeChannel>(null);
-  // useEffect(() => {
-  //   if (channelRef.current?.state === "subscribed") return;
-  //   const channel = database.channel(`room:${room.value.id}:users`, {
-  //     config: {
-  //       broadcast: { self: false, ack: true },
-  //       presence: { key: "user-session-id", enabled: true },
-  //       private: false, // Required for RLS authorization
-  //     },
-  //   });
-  //
-  //   channelRef.current = channel;
-  //   channel.on("presence", { event: "sync" }, () => {
-  //     const state = channel.presenceState();
-  //     const presences = Object.values(state).flatMap((v) => v.metas);
-  //     count.value = presences.length;
-  //   });
-  //   channel.subscribe((status, err) => {
-  //     switch (status) {
-  //       case "SUBSCRIBED":
-  //         console.log("Connected (or reconnected)");
-  //         break;
-  //       case "CHANNEL_ERROR":
-  //         console.error("Channel error:", err);
-  //         break;
-  //       case "CLOSED":
-  //         console.log("Channel closed");
-  //         break;
-  //     }
-  //   });
-  //   return () => {
-  //     if (channelRef.current) {
-  //       channel.unsubscribe();
-  //       database.removeChannel(channelRef.current);
-  //       channelRef.current = null;
-  //       console.log("unsubscribed");
-  //     }
-  //   };
-  // }, []);
+
   return (
     <div class="card">
       <div class="flex justify-between items-center">
@@ -92,7 +53,7 @@ export default function RoomIsland({ data, input }: RoomProps) {
           </Button>
         </div>
 
-        <TimeStamp time={room.value.created_at} />
+        <TimeStamp time={Date.parse(room.value.created_at)} />
         <PlayerCount count={count.value} class="player-count" />
       </div>
     </div>

@@ -1,29 +1,43 @@
-import { getDatabase } from "./database.ts"
-import type { Context } from "$fresh/server.ts";
-// check - room exist
-//       - room hasnt been filled up. has enough space for the user to join.
-export async function exist(ctx: Context, id: string): Promise<boolean> {
-  if(id === undefined || id === "") {
-    return false;
-  }
+import { getDatabase } from "./database/database.ts";
+import type { Context } from "fresh";
+import type { State } from "./utils.ts";
+
+// -------------------------
+// Check if a room exists
+// -------------------------
+export async function exist(
+  ctx: Context<State>,
+  id: string,
+): Promise<boolean> {
+  if (!id || !ctx.state.auth?.jwt) return false;
+
   const { data, error } = await getDatabase(ctx.state.auth.jwt)
     .from("rooms")
     .select("id")
-    .eq('id', id)
+    .eq("id", id)
     .limit(1)
-    .maybeSingle();
-  if (error) return false
-  return data !== null
+    .maybeSingle<{ id: string }>();
+
+  if (error) return false;
+  return data !== null;
 }
 
-export async function capacity(ctx: Context, id: string): Promise<number> {
-  if(id === undefined || id === "") {
-    return false;
-  }
-  const { num, error } = await getDatabase(ctx.state.auth.jwt)
-    .from("room_membership")
-    .select('room_id', count:count(*), { head: false})
-    .eq('room_id', id);
+// -------------------------
+// Get current room capacity
+// -------------------------
+export async function capacity(
+  ctx: Context<State>,
+  id: string,
+): Promise<number> {
+  if (!id || !ctx.state.auth?.jwt) return 0;
+
+  const { count, error } = await getDatabase(ctx.state.auth.jwt)
+    .from("room_memberships")
+    .select("room_id", { count: "exact", head: true })
+    .eq("room_id", id);
+
   if (error) return -1;
-  return num;
+
+  // If count is null or undefined, return 0
+  return count ?? 0;
 }

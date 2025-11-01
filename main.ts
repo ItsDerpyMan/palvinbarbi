@@ -1,6 +1,8 @@
 import { App, Context, staticFiles } from "fresh";
-import * as middlewares from "./utils/middlewares.ts"
+import * as middlewares from "./utils/middlewares.ts";
 import * as utils from "./utils/utils.ts";
+import { getDatabase } from "./utils/database/database.ts";
+//import type { Room } from "./utils/database/database.ts";
 
 export const app = new App<utils.State>();
 app.use(staticFiles());
@@ -9,7 +11,20 @@ app.use(staticFiles());
 //   return ctx.next();
 // });
 // app.use(exampleLoggerMiddleware);
-app.get("/", (ctx: Context<utils.State>) => ctx.redirect("/api/rooms"));
+app.get("/", (ctx: Context<utils.State>) => ctx.redirect("/rooms"));
+// api/rooms.ts
+app.get("/api/rooms", async (_ctx: Context<utils.State>) => {
+  const { data, error } = await getDatabase().from("rooms").select("*");
+  if (error) {
+    console.warn("database error:", error);
+    return new Response("Internal Server Error", { status: 500 });
+  }
+  return new Response(JSON.stringify({ data: data ?? [], error: null }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+});
+
 app.post(
   "/api/rooms/:id",
   middlewares.getUser,
@@ -23,12 +38,12 @@ app.post(
 );
 app.get(
   "/api/rooms/:id",
-  middlewares.roomValidation,
+  middlewares.Validation,
   middlewares.validateSession,
-  middlewares.signupForRoomMembership,
+  middlewares.signupForMembership,
   (ctx: Context<utils.State>) => {
-    console.log("✅ signed up for the room.")
-    return ctx.redirect(`/rooms/${ctx.params.id}`)
-  }
-)
+    console.log("✅ signed up for the room.");
+    return ctx.redirect(`/rooms/${ctx.params.id}`);
+  },
+);
 app.fsRoutes();

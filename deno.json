@@ -12,14 +12,14 @@
   "imports": {
     "@std/http/cookie": "jsr:@std/http@^1.0.21/cookie",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.58.0",
-    "fresh": "jsr:@fresh/core@^2.1.2",
+    "fresh": "jsr:@fresh/core@^2.1.4",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@1.0.4",
     "preact": "npm:preact@^10.27.2",
     "@preact/signals": "npm:@preact/signals@^2.3.2",
     "timeago.js": "npm:timeago.js@^4.0.2",
-    "vite": "npm:vite@^7.1.9",
-    "tailwindcss": "npm:tailwindcss@^4.1.14",
-    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.14"
+    "vite": "npm:vite@^7.1.12",
+    "tailwindcss": "npm:tailwindcss@^4.1.16",
+    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.16"
   },
   "compilerOptions": {
     "lib": ["esnext", "dom", "dom.asynciterable", "dom.iterable", "deno.ns"],

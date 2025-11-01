@@ -1,6 +1,4 @@
-import { useEffect } from "preact/hooks";
-import type { Signal} from "@preact/signals";
-
+import type { Signal } from "@preact/signals";
 
 interface UsernameInputProps {
   id?: string;
@@ -8,13 +6,23 @@ interface UsernameInputProps {
   username?: Signal<string>;
 }
 
-export default function UsernameInput({username, ...props }: UsernameInputProps) {
+export default function UsernameInput(
+  { username, ...props }: UsernameInputProps,
+) {
   return (
-    <form onsubmit={(e) => e.preventDefault()} id={props.id} class={props.class}>
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      id={props.id}
+      class={props.class}
+    >
       <input
         type="text"
-        value={username}
-        onInput={(e) => (username.value = (e.target as HTMLInputElement).value)}
+        value={username?.value ?? ""}
+        onInput={(
+          e,
+        ) => {
+          if (username) username.value = e.currentTarget.value;
+        }}
         placeholder="Enter username"
       />
     </form>

@@ -1,111 +1,187 @@
-import { getdb } from "./database.ts";
+import { getDatabase } from "./database/database.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
-import type { Context } from "$fresh/server.ts";
+import type { Context } from "fresh";
+import type { State } from "./utils.ts";
+import type { AuthApiError, Session, User } from "@supabase/supabase-js";
+import type { Tables, TablesInsert } from "./database/supabase.types.ts";
 
+// -------------------------
+// Auth interface
+// -------------------------
 export interface Auth {
   jwt?: string;
-  user?: string;
+  userId?: string;
   username?: string;
-  session?: string;
-}
-export function getCookiesFromReq(req: Request) {
-  return getCookies(req.headers)
+  sessionId?: string;
 }
 
-export async function verifyCookies(cookies: Record<string, string>): Promise<Auth | null> {
-  const sessionId = cookies["session_id"];
-  const jwt = cookies["sb_jwt"];
+// -------------------------
+// getCookiesFromReq()
+// -------------------------
+export function getCookiesFromReq(req: Request): Record<string, string> {
+  return getCookies(req.headers);
+}
 
-  if (!sessionId || !jwt) return null;
+// -------------------------
+// verifyCookies()
+// -------------------------
+export async function verifyCookies(
+  cookies: Record<string, string>,
+): Promise<Auth | null> {
+  const session: string | null = cookies["session_id"];
+  const jwt: string | null = cookies["sb_jwt"];
 
-  const { data: sessionData } = await getDatabase(jwt)
+  if (!session || !jwt) return null;
+
+  const { data: sessionData, error } = await getDatabase(jwt)
     .from("sessions")
     .select("id, user_id, token, expires_at")
-    .eq("id", sessionId)
-    .single();
+    .eq("id", session)
+    .single<Tables<"sessions">>();
 
-  if (!sessionData) return null;
-  if (sessionData.expires_at && new Date(sessionData.expires_at) < new Date()) return null;
+  if (error || !sessionData) return null;
+  if (sessionData.expires_at && new Date(sessionData.expires_at) < new Date()) {
+    return null;
+  }
 
   return {
     sessionId: sessionData.id,
-    userId: sessionData.user_id,
-    jwt
+    userId: sessionData.user_id ?? undefined,
+    jwt,
   };
 }
 
-export async function signInAnonymous(): Promise<{ userId: string, jwt: string, refreshToken: string }> {
-  const { data, error } = await getDatabase().auth.signInAnonymously();
-  if (error) throw new Error("Anonymous sign-in failed: " + error.message);
+// -------------------------
+// signInAnonymous()
+// -------------------------
+type AuthRes = {
+  user: User;
+  session: Session;
+};
+type Response<T> = { data: T | null; error: AuthApiError | null };
 
-  // Ensure public.users exists
-  await getDatabase(data.session.access_token).from("users").upsert({ id: data.user.id });
+export async function signInAnonymous(): Promise<{
+  userId: string;
+  jwt: string;
+  refreshToken: string;
+}> {
+  const { data, error } = await getDatabase().auth
+    .signInAnonymously() as Response<
+      AuthRes
+    >;
+
+  if (error || !data?.user || !data?.session) {
+    throw new Error(
+      "Anonymous sign-in failed: " + (error?.message ?? "unknown"),
+    );
+  }
+
+  // Destructure user and session
+  const { user, session } = data;
+  const { id: userId } = user;
+  const { access_token: jwt, refresh_token: refreshToken } = session;
+
+  // Ensure user exists in the database
+  await getDatabase(jwt)
+    .from("users")
+    .upsert(
+      {
+        id: userId,
+      } satisfies TablesInsert<"users">,
+    );
 
   return {
-    userId: data.user.id,
-    jwt: data.session.access_token,
-    refreshToken: data.session.refresh_token
+    userId,
+    jwt,
+    refreshToken,
   };
 }
 
-export async function restoreJWT(sessionId: string): Promise<{ jwt: string } | null> {
-  // Retrieve refresh token from DB
+// -------------------------
+// restoreJWT()
+// -------------------------
+export async function restoreJWT(
+  sessionId: string,
+): Promise<{ jwt: string } | null> {
   const database = getDatabase();
-  const { data: sessionData } = await database
+  const { data: sessionData, error } = await database
     .from("sessions")
     .select("token")
     .eq("id", sessionId)
-    .single();
+    .single<Tables<"sessions">>();
 
-  if (!sessionData) return null;
+  if (error || !sessionData) return null;
 
-  // Use refresh token to get new JWT
-  const { data, error } = await database.auth.refreshSession({ refresh_token: sessionData.token });
-  if (error) return null;
+  const { data, error: refreshError } = await database.auth.refreshSession({
+    refresh_token: sessionData.token,
+  });
 
-  // Update DB with new refresh token
+  if (refreshError || !data?.session) return null;
+
   await getDatabase(data.session.access_token)
     .from("sessions")
-    .update({ token: data.session.refresh_token })
+    .update(
+      {
+        token: data.session.refresh_token,
+      } satisfies TablesInsert<"sessions">,
+    )
     .eq("id", sessionId);
 
   return { jwt: data.session.access_token };
 }
 
-export async function restoreUserSession(cookies: Record<string, string>): Promise<Auth | null> {
+// -------------------------
+// restoreUserSession()
+// -------------------------
+export async function restoreUserSession(
+  cookies: Record<string, string>,
+): Promise<Auth | null> {
   const verified = await verifyCookies(cookies);
   if (!verified) return null;
 
-  // Try to validate the JWT by fetching the user
   try {
     await getDatabase(verified.jwt).auth.getUser(verified.jwt);
   } catch {
-    // JWT invalid → refresh
     const restored = await restoreJWT(verified.sessionId!);
     if (!restored) return null;
     verified.jwt = restored.jwt;
   }
-
   return verified;
 }
 
-export async function createSession(ctx: Context, userId: string, refreshToken: string) {
-  const { data, error } = await getDatabase(ctx.state.auth.jwt)
+// -------------------------
+// createSession()
+// -------------------------
+export async function createSession(
+  ctx: Context<State>,
+  userId: string,
+  refreshToken: string,
+): Promise<Tables<"sessions">> {
+  const { data, error } = await getDatabase(ctx.state.auth?.jwt)
     .from("sessions")
-    .insert({
-      user_id: userId,
-      token: refreshToken,
-      expires_at: new Date(Date.now() + 1000 * 60 * 60),
-    })
+    .insert(
+      {
+        user_id: userId,
+        token: refreshToken,
+        expires_at: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+      } satisfies TablesInsert<"sessions">,
+    )
     .select()
-    .single();
+    .single<Tables<"sessions">>();
 
   if (error) throw new Error("Session creation failed: " + error.message);
   return data;
 }
 
-export function setAuthCookies(headers: Headers, jwt: string, sessionId: string) {
-  setCookie(headers, {
+// -------------------------
+// setAuthCookies()
+// -------------------------
+export function setAuthCookies(
+  ctx: Context<State>,
+  jwt: string,
+  sessionId: string,
+): void {
+  setCookie(ctx.req.headers, {
     name: "sb_jwt",
     value: jwt,
     httpOnly: true,
@@ -114,7 +190,8 @@ export function setAuthCookies(headers: Headers, jwt: string, sessionId: string)
     path: "/",
     maxAge: 3600,
   });
-  setCookie(headers, {
+
+  setCookie(ctx.req.headers, {
     name: "session_id",
     value: sessionId,
     httpOnly: true,

@@ -1,67 +1,92 @@
 import { define } from "./utils.ts";
 import { getCookies } from "@std/http/cookie";
 import {
-  signInAnonymous,
-  restoreUserSession,
   createSession,
+  restoreUserSession,
   setAuthCookies,
+  signInAnonymous,
 } from "./auth.ts";
 import { createUser } from "./user.ts";
-import * as Room from "./room.ts";
-import { getDatabase } from "./database.ts";
+import * as roomService from "./room.ts";
+import { getDatabase } from "./database/database.ts";
+import type { Auth } from "./auth.ts";
 
 export interface State {
-  auth: {
-    jwt?: string;
-    user?: string;
-    username?: string;
-    session?: string;
-  };
+  auth: Auth & { userId?: string; sessionId?: string };
 }
-export const roomValidation = define.middleware(async (ctx) => {
-  // check - room exist
-  //       - room hasnt been filled up. has enough space for the user to join.
-  if (room.exist && room.capacity < 5) { // change from 5 to 20
+
+// -------------------------
+// Room validation middleware
+// -------------------------
+export const Validation = define.middleware(async (ctx) => {
+  const roomId = ctx.params.id;
+
+  if (!roomId) {
+    console.log("No room id provided");
+    return ctx.redirect("/api/rooms", 400);
+  }
+
+  const exists = await roomService.exist(ctx, roomId);
+  const members = await roomService.capacity(ctx, roomId);
+
+  // change max capacity from 5 → 20
+  if (exists && members < 20) {
     return await ctx.next();
   }
-  console.log("Room validation failed, room doesnot exist or its filled up");
-  return await ctx.redirect("/api/rooms")
-})
 
+  console.log("Validation failed: room does not exist or is full");
+  return ctx.redirect("/api/rooms", 403);
+});
+
+// -------------------------
+// Validate user session
+// -------------------------
 export const validateSession = define.middleware(async (ctx) => {
-  const cookies = getCookies(ctx.req);
+  const cookies = getCookies(ctx.req.headers);
   const sessionId = cookies["session_id"];
   const jwt = cookies["sb_jwt"];
 
-  if (!sessionId || !jwt) return await ctx.redirect("/api/rooms");
+  if (!sessionId || !jwt) return ctx.redirect("/api/rooms", 401);
+
   const database = getDatabase(jwt);
+
   const { data: sessionData } = await database
     .from("sessions")
     .select("id, user_id, token, expires_at")
     .eq("id", sessionId)
     .single();
 
-  if (!sessionData) return await ctx.redirect("/api/rooms", 403);
-  if (sessionData.expires_at && new Date(sessionData.expires_at) < new Date()) return await ctx.redirect("/api/rooms", 403);
+  if (!sessionData) return ctx.redirect("/api/rooms", 403);
+  if (sessionData.expires_at && new Date(sessionData.expires_at) < new Date()) {
+    return ctx.redirect("/api/rooms", 403);
+  }
 
   const { data: userData, error } = await database.auth.getUser(jwt);
-  if (!userData || error) return await ctx.redirect("/api/rooms", 401);
+  if (!userData || error) return ctx.redirect("/api/rooms", 401);
 
   ctx.state.auth = {
-    session: sessionData.id,
-    user: sessionData.user_id,
-    jwt
+    jwt,
+    sessionId: sessionData.id,
+    userId: sessionData.user_id ?? undefined,
   };
 
   return await ctx.next();
-})
-export const signupForRoomMembership = define.middleware(async (ctx) => {
-  const user = ctx.state.auth?.user;
-  const session = ctx.state.auth?.session;
-  const room = ctx.params.id;
+});
 
-  if (!user || !session || !room) return await ctx.redirect("/api/rooms", 404)
-  const database = getDatabase(ctx.auth.jwt)
+// -------------------------
+// Signup for room membership
+// -------------------------
+export const signupForMembership = define.middleware(async (ctx) => {
+  const userId = ctx.state.auth?.userId;
+  const sessionId = ctx.state.auth?.sessionId;
+  const roomId = ctx.params.id;
+
+  if (!userId || !sessionId || !roomId) {
+    return ctx.redirect("/api/rooms", 404);
+  }
+
+  const database = getDatabase(ctx.state.auth?.jwt);
+
   const { data: existing, error: existingError } = await database
     .from("room_memberships")
     .select("id")
@@ -69,23 +94,26 @@ export const signupForRoomMembership = define.middleware(async (ctx) => {
     .eq("room_id", roomId)
     .maybeSingle();
 
-  if (existingError) return await ctx.redirect("/api/rooms", 500)
+  if (existingError) return ctx.redirect("/api/rooms", 500);
 
   if (!existing) {
     const { error: insertError } = await database
       .from("room_memberships")
       .insert({ room_id: roomId, session_id: sessionId });
 
-    if (insertError) return await ctx.redirect("/api/rooms", 500)
+    if (insertError) return ctx.redirect("/api/rooms", 500);
 
     console.log(`✅ User ${userId} joined room ${roomId}`);
   } else {
-    console.log(`User ${userId} already member of room ${roomId}`);
+    console.log(`User ${userId} is already a member of room ${roomId}`);
   }
 
   return await ctx.next();
 });
 
+// -------------------------
+// Get username from form
+// -------------------------
 export const getUser = define.middleware(async (ctx) => {
   const form = await ctx.req.formData();
   const username = form.get("username")?.toString()?.trim();
@@ -94,11 +122,13 @@ export const getUser = define.middleware(async (ctx) => {
     return new Response("Username is required", { status: 400 });
   }
 
-  ctx.state.auth = { username };
+  ctx.state.auth = { ...ctx.state.auth, username };
   return await ctx.next();
 });
 
-
+// -------------------------
+// Restore session from cookies
+// -------------------------
 export const restoreSession = define.middleware(async (ctx) => {
   const cookies = getCookies(ctx.req.headers);
   const session = await restoreUserSession(cookies);
@@ -110,18 +140,23 @@ export const restoreSession = define.middleware(async (ctx) => {
   return await ctx.next();
 });
 
+// -------------------------
+// Create anonymous session
+// -------------------------
 export const createAnonSession = define.middleware(async (ctx) => {
-  if (ctx.state.auth.jwt && ctx.state.auth.userId && ctx.state.auth.sessionId) {
+  const auth = ctx.state.auth;
+
+  if (auth?.jwt && auth?.userId && auth?.sessionId) {
     return await ctx.next();
   }
 
   const anon = await signInAnonymous();
-  const username = ctx.state.auth.username ?? "Guest";
+  const username = auth?.username ?? "Guest";
 
-  await createUser(anon.userId, username);
+  await createUser(ctx, anon.userId, username);
 
   const session = await createSession(ctx, anon.userId, anon.refreshToken);
-  setAuthCookies(ctx.res.headers, anon.jwt, session.id);
+  setAuthCookies(ctx, anon.jwt, session.id);
 
   ctx.state.auth = {
     jwt: anon.jwt,
