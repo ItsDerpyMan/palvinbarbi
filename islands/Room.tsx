@@ -17,7 +17,8 @@ export default function RoomIsland({ data, input }: RoomProps) {
 
   useEffect(() => {
     console.log(`User ${input.value} joined ${data.name}`);
-  }, [input]);
+  }, [input.value]);
+
   const handleJoin = async () => {
     if (!input.value.trim()) {
       alert("Please enter a username!");

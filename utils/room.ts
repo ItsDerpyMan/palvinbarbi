@@ -9,6 +9,7 @@ export async function exist(
   ctx: Context<State>,
   id: string,
 ): Promise<boolean> {
+  console.log(`id: ${id}\nkey: ${ctx.state.auth?.jwt}`);
   if (!id || !ctx.state.auth?.jwt) return false;
 
   const { data, error } = await getDatabase(ctx.state.auth.jwt)

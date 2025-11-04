@@ -9,12 +9,30 @@ import {
 import { createUser } from "./user.ts";
 import * as roomService from "./room.ts";
 import { getDatabase } from "./database/database.ts";
-import type { Auth } from "./auth.ts";
+// import type { Auth } from "./auth.ts";
+//
+// export interface State {
+//   auth: Auth & { userId?: string; sessionId?: string };
+// }
 
-export interface State {
-  auth: Auth & { userId?: string; sessionId?: string };
+// Auth debug
+export const authDebug = define.middleware(async (ctx) => {
+  const jwt = ctx.state.auth?.jwt;
+  const userId = ctx.state.auth?.userId ?? "no userId";
+  const username = ctx.state.auth?.username ?? "no username";
+  const sessionId = ctx.state.auth?.sessionId ?? "no sessionId";
+  console.log(
+    `jwt: ${jwt}\nuser: ${userId}\nusername: ${username}\nsessionId: ${sessionId}`,
+  );
+  return await ctx.next();
+});
+
+function redirect(url: string, err?: string, status = 302) {
+  return new Response(err, {
+    status,
+    headers: { Location: url },
+  });
 }
-
 // -------------------------
 // Room validation middleware
 // -------------------------
@@ -22,8 +40,7 @@ export const Validation = define.middleware(async (ctx) => {
   const roomId = ctx.params.id;
 
   if (!roomId) {
-    console.log("No room id provided");
-    return ctx.redirect("/api/rooms", 400);
+    return redirect("/rooms", "No room id provided", 400);
   }
 
   const exists = await roomService.exist(ctx, roomId);
@@ -31,11 +48,15 @@ export const Validation = define.middleware(async (ctx) => {
 
   // change max capacity from 5 → 20
   if (exists && members < 20) {
-    return await ctx.next();
+    return ctx.next();
   }
 
-  console.log("Validation failed: room does not exist or is full");
-  return ctx.redirect("/api/rooms", 403);
+  console.log();
+  return redirect(
+    "/api/rooms",
+    "Validation failed: room does not exist or is full",
+    403,
+  );
 });
 
 // -------------------------
@@ -46,7 +67,13 @@ export const validateSession = define.middleware(async (ctx) => {
   const sessionId = cookies["session_id"];
   const jwt = cookies["sb_jwt"];
 
-  if (!sessionId || !jwt) return ctx.redirect("/api/rooms", 401);
+  if (!sessionId || !jwt) {
+    return redirect(
+      "/api/rooms",
+      "Validation failed: browser cookies are not valid",
+      401,
+    );
+  }
 
   const database = getDatabase(jwt);
 
@@ -56,15 +83,26 @@ export const validateSession = define.middleware(async (ctx) => {
     .eq("id", sessionId)
     .single();
 
-  if (!sessionData) return ctx.redirect("/api/rooms", 403);
+  if (!sessionData) {
+    return redirect(
+      "/api/rooms",
+      `Not found any ${sessionId} id in the sessions table`,
+      403,
+    );
+  }
   if (sessionData.expires_at && new Date(sessionData.expires_at) < new Date()) {
-    return ctx.redirect("/api/rooms", 403);
+    return redirect(
+      "/api/rooms",
+      `Session has been expired at ${sessionData.expires_at}`,
+      403,
+    );
   }
 
   const { data: userData, error } = await database.auth.getUser(jwt);
-  if (!userData || error) return ctx.redirect("/api/rooms", 401);
+  if (!userData || error) return redirect("/api/rooms", "User not found", 401);
 
   ctx.state.auth = {
+    ...ctx.state.auth,
     jwt,
     sessionId: sessionData.id,
     userId: sessionData.user_id ?? undefined,
@@ -82,7 +120,7 @@ export const signupForMembership = define.middleware(async (ctx) => {
   const roomId = ctx.params.id;
 
   if (!userId || !sessionId || !roomId) {
-    return ctx.redirect("/api/rooms", 404);
+    return redirect("/rooms", "Identification failed", 404);
   }
 
   const database = getDatabase(ctx.state.auth?.jwt);
@@ -94,14 +132,26 @@ export const signupForMembership = define.middleware(async (ctx) => {
     .eq("room_id", roomId)
     .maybeSingle();
 
-  if (existingError) return ctx.redirect("/api/rooms", 500);
+  if (existingError) {
+    return redirect(
+      "/rooms",
+      `Not found any room membership that has matching session id and room id.\n${sessionId}\n${roomId}`,
+      500,
+    );
+  }
 
   if (!existing) {
     const { error: insertError } = await database
       .from("room_memberships")
       .insert({ room_id: roomId, session_id: sessionId });
 
-    if (insertError) return ctx.redirect("/api/rooms", 500);
+    if (insertError) {
+      return redirect(
+        "/rooms",
+        "Failed to insert new room membership into the db",
+        500,
+      );
+    }
 
     console.log(`✅ User ${userId} joined room ${roomId}`);
   } else {
@@ -118,9 +168,7 @@ export const getUser = define.middleware(async (ctx) => {
   const form = await ctx.req.formData();
   const username = form.get("username")?.toString()?.trim();
 
-  if (!username) {
-    return new Response("Username is required", { status: 400 });
-  }
+  if (!username) return redirect("/rooms/", "Username is required", 400);
 
   ctx.state.auth = { ...ctx.state.auth, username };
   return await ctx.next();
@@ -143,6 +191,7 @@ export const restoreSession = define.middleware(async (ctx) => {
 // -------------------------
 // Create anonymous session
 // -------------------------
+// // needs some fix and patches
 export const createAnonSession = define.middleware(async (ctx) => {
   const auth = ctx.state.auth;
 
@@ -150,20 +199,40 @@ export const createAnonSession = define.middleware(async (ctx) => {
     return await ctx.next();
   }
 
-  const anon = await signInAnonymous();
+  const { userId, jwt, refreshToken } = await signInAnonymous();
+  ctx.state.auth = { ...ctx.state.auth, userId, jwt };
   const username = auth?.username ?? "Guest";
-
-  await createUser(ctx, anon.userId, username);
-
-  const session = await createSession(ctx, anon.userId, anon.refreshToken);
-  setAuthCookies(ctx, anon.jwt, session.id);
-
-  ctx.state.auth = {
-    jwt: anon.jwt,
-    userId: anon.userId,
-    username,
-    sessionId: session.id,
-  };
-
+  try {
+    await createUser(jwt, userId, username)
+      .then(() => {
+        ctx.state.auth = { ...ctx.state.auth, username };
+      }).catch((e) => {
+        throw new Error(e);
+      });
+    // await getDatabase(jwt).auth.updateUser({
+    //   user_metadata: { display_name: username },
+    // })
+  } catch (err) {
+    // impl. user cleaning up.
+    return redirect("/rooms", `Failed to update user's username: ${err}`, 403);
+  }
+  console.log("...");
+  try {
+    await createSession(jwt, userId, refreshToken)
+      .then(
+        (session) => {
+          ctx.state.auth = {
+            ...ctx.state.auth,
+            sessionId: session.id,
+          };
+          console.log(`session_id: ${session.id}`);
+          setAuthCookies(ctx, jwt, session.id);
+        },
+      ).catch((e) => {
+        throw new Error(e);
+      });
+  } catch (err) {
+    return redirect("/rooms", `Failed to create a session: ${err}`, 403);
+  }
   return await ctx.next();
 });

@@ -3,7 +3,7 @@ import { getCookies, setCookie } from "@std/http/cookie";
 import type { Context } from "fresh";
 import type { State } from "./utils.ts";
 import type { AuthApiError, Session, User } from "@supabase/supabase-js";
-import type { Tables, TablesInsert } from "./database/supabase.types.ts";
+import type { Tables, TablesInsert } from "./database/database.types.ts";
 
 // -------------------------
 // Auth interface
@@ -153,11 +153,14 @@ export async function restoreUserSession(
 // createSession()
 // -------------------------
 export async function createSession(
-  ctx: Context<State>,
+  jwt: string,
   userId: string,
   refreshToken: string,
 ): Promise<Tables<"sessions">> {
-  const { data, error } = await getDatabase(ctx.state.auth?.jwt)
+  if (!jwt) {
+    throw new Error("No jwt key is available for session creation.");
+  }
+  const { data, error } = await getDatabase(jwt)
     .from("sessions")
     .insert(
       {

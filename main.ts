@@ -37,7 +37,7 @@ app.post(
   },
 );
 app.get(
-  "/api/rooms/:id",
+  "/rooms/:id",
   middlewares.Validation,
   middlewares.validateSession,
   middlewares.signupForMembership,

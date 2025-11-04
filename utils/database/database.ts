@@ -1,11 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./database.types.ts";
-import type { Tables } from "./supabase.types.ts";
+import type { Database, Tables } from "./database.types.ts";
 
 export function getDatabase(jwt?: string) {
   const url = Deno.env.get("HEAD_SUPABASE_URL");
-  const key = Deno.env.get("HEAD_SUPABASE_ANON_KEY");
-  //const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  //const key = Deno.env.get("HEAD_SUPABASE_ANON_KEY");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!url || !key) {
     throw new Error(
