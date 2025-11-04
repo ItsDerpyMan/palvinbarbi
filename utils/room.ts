@@ -2,17 +2,17 @@ import { getDatabase } from "./database/database.ts";
 import type { Context } from "fresh";
 import type { State } from "./utils.ts";
 
+// TODO GetCookies and fetch the jwt key from them and get query the database safely
+//
 // -------------------------
 // Check if a room exists
 // -------------------------
 export async function exist(
-  ctx: Context<State>,
   id: string,
 ): Promise<boolean> {
-  console.log(`id: ${id}\nkey: ${ctx.state.auth?.jwt}`);
-  if (!id || !ctx.state.auth?.jwt) return false;
+  if (!id) return false;
 
-  const { data, error } = await getDatabase(ctx.state.auth.jwt)
+  const { data, error } = await getDatabase()
     .from("rooms")
     .select("id")
     .eq("id", id)
@@ -27,12 +27,11 @@ export async function exist(
 // Get current room capacity
 // -------------------------
 export async function capacity(
-  ctx: Context<State>,
   id: string,
 ): Promise<number> {
-  if (!id || !ctx.state.auth?.jwt) return 0;
+  if (!id) return 0;
 
-  const { count, error } = await getDatabase(ctx.state.auth.jwt)
+  const { count, error } = await getDatabase()
     .from("room_memberships")
     .select("room_id", { count: "exact", head: true })
     .eq("room_id", id);

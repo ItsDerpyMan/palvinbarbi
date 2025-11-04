@@ -43,8 +43,8 @@ export const Validation = define.middleware(async (ctx) => {
     return redirect("/rooms", "No room id provided", 400);
   }
 
-  const exists = await roomService.exist(ctx, roomId);
-  const members = await roomService.capacity(ctx, roomId);
+  const exists = await roomService.exist(roomId);
+  const members = await roomService.capacity(roomId);
 
   // change max capacity from 5 → 20
   if (exists && members < 20) {
@@ -53,7 +53,7 @@ export const Validation = define.middleware(async (ctx) => {
 
   console.log();
   return redirect(
-    "/api/rooms",
+    "/rooms",
     "Validation failed: room does not exist or is full",
     403,
   );
@@ -69,7 +69,7 @@ export const validateSession = define.middleware(async (ctx) => {
 
   if (!sessionId || !jwt) {
     return redirect(
-      "/api/rooms",
+      "/rooms",
       "Validation failed: browser cookies are not valid",
       401,
     );
@@ -85,21 +85,21 @@ export const validateSession = define.middleware(async (ctx) => {
 
   if (!sessionData) {
     return redirect(
-      "/api/rooms",
+      "/rooms",
       `Not found any ${sessionId} id in the sessions table`,
       403,
     );
   }
   if (sessionData.expires_at && new Date(sessionData.expires_at) < new Date()) {
     return redirect(
-      "/api/rooms",
+      "/rooms",
       `Session has been expired at ${sessionData.expires_at}`,
       403,
     );
   }
 
   const { data: userData, error } = await database.auth.getUser(jwt);
-  if (!userData || error) return redirect("/api/rooms", "User not found", 401);
+  if (!userData || error) return redirect("/rooms", "User not found", 401);
 
   ctx.state.auth = {
     ...ctx.state.auth,

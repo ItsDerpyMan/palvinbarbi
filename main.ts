@@ -33,7 +33,7 @@ app.post(
   (ctx: Context<utils.State>) => {
     console.log("✅ Authenticated user:", ctx.state.auth);
 
-    return ctx.redirect(`/api/rooms/${ctx.params.id}`);
+    return ctx.redirect(`/rooms/${ctx.params.id}`);
   },
 );
 app.get(
