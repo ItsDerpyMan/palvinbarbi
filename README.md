@@ -1,17 +1,7 @@
-# Fresh project
+# Introduction
 
-Your new Fresh project is ready to go. You can follow the Fresh "Getting
-Started" guide here: https://fresh.deno.dev/docs/getting-started
+This project is an **in-development fullstack web application** for a multiplayer quiz game based on the popular **“Would You Rather”** format. The platform is designed to let users join interactive game sessions, answer fun and thought-provoking “would you rather” questions, and compete or collaborate with others in real time through a modern web interface.
 
-### Usage
+The goal of this project is to provide a seamless, engaging, and scalable multiplayer experience — blending real-time gameplay mechanics with secure, user-friendly web technology. It will feature player matchmaking, live question rounds, score tracking, and interactive chat capabilities once fully developed.
 
-Make sure to install Deno:
-https://docs.deno.com/runtime/getting_started/installation
-
-Then start the project in development mode:
-
-```
-deno task dev
-```
-
-This will watch the project directory and restart as necessary.
+At the current stage of development, the focus is on building the **authentication backend**. This includes setting up the user model, registration and login endpoints, token-based authentication (JWT or session-based), and secure password management. The foundation laid here will support role-based access control and persistent user data for future gameplay and social features.
