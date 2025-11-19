@@ -180,11 +180,12 @@ export async function createSession(
 // setAuthCookies()
 // -------------------------
 export function setAuthCookies(
-  ctx: Context<State>,
+  response: Response,
   jwt: string,
   sessionId: string,
-): void {
-  setCookie(ctx.req.headers, {
+): Response {
+  const headers = new Headers(response.headers);
+  setCookie(headers, {
     name: "sb_jwt",
     value: jwt,
     httpOnly: true,
@@ -194,7 +195,7 @@ export function setAuthCookies(
     maxAge: 3600,
   });
 
-  setCookie(ctx.req.headers, {
+  setCookie(headers, {
     name: "session_id",
     value: sessionId,
     httpOnly: true,
@@ -202,5 +203,9 @@ export function setAuthCookies(
     sameSite: "Lax",
     path: "/",
     maxAge: 3600,
+  });
+  return new Response(response.body, {
+    ...response,
+    headers,
   });
 }

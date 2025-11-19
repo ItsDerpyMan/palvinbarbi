@@ -216,7 +216,7 @@ export const createAnonSession = define.middleware(async (ctx) => {
     // impl. user cleaning up.
     return redirect("/rooms", `Failed to update user's username: ${err}`, 403);
   }
-  console.log("...");
+  let res = await ctx.next();
   try {
     await createSession(jwt, userId, refreshToken)
       .then(
@@ -226,7 +226,7 @@ export const createAnonSession = define.middleware(async (ctx) => {
             sessionId: session.id,
           };
           console.log(`session_id: ${session.id}`);
-          setAuthCookies(ctx, jwt, session.id);
+          res = setAuthCookies(res, jwt, session.id);
         },
       ).catch((e) => {
         throw new Error(e);
@@ -234,5 +234,5 @@ export const createAnonSession = define.middleware(async (ctx) => {
   } catch (err) {
     return redirect("/rooms", `Failed to create a session: ${err}`, 403);
   }
-  return await ctx.next();
+  return res;
 });
