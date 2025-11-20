@@ -9,6 +9,8 @@ import {
 import { createUser } from "./user.ts";
 import * as roomService from "./room.ts";
 import { getDatabase } from "./database/database.ts";
+import { State } from "./utils.ts";
+import type { Context } from "fresh";
 // import type { Auth } from "./auth.ts";
 //
 // export interface State {
@@ -16,7 +18,7 @@ import { getDatabase } from "./database/database.ts";
 // }
 
 // Auth debug
-export const authDebug = define.middleware(async (ctx) => {
+export const authDebug = define.middleware(async (ctx: Context<State>) => {
   const jwt = ctx.state.auth?.jwt;
   const userId = ctx.state.auth?.userId ?? "no userId";
   const username = ctx.state.auth?.username ?? "no username";
@@ -27,7 +29,7 @@ export const authDebug = define.middleware(async (ctx) => {
   return await ctx.next();
 });
 
-function redirect(url: string, err?: string, status = 302) {
+function redirect(url: string, err?: string, status = 302): Response {
   return new Response(err, {
     status,
     headers: { Location: url },
@@ -36,22 +38,22 @@ function redirect(url: string, err?: string, status = 302) {
 // -------------------------
 // Room validation middleware
 // -------------------------
-export const Validation = define.middleware(async (ctx) => {
+export const Validation = define.middleware(async (ctx: Context<State>): Promise<Response> => {
   const roomId = ctx.params.id;
 
   if (!roomId) {
     return redirect("/rooms", "No room id provided", 400);
   }
 
-  const exists = await roomService.exist(roomId);
-  const members = await roomService.capacity(roomId);
+  const exists: boolean = await roomService.exist(roomId);
+  const members: number = await roomService.capacity(roomId);
 
   // change max capacity from 5 → 20
-  if (exists && members < 20) {
+  if (exists && members < 5) {
     return ctx.next();
   }
 
-  console.log();
+  console.warn("Validation failed!");
   return redirect(
     "/rooms",
     "Validation failed: room does not exist or is full",
@@ -62,7 +64,7 @@ export const Validation = define.middleware(async (ctx) => {
 // -------------------------
 // Validate user session
 // -------------------------
-export const validateSession = define.middleware(async (ctx) => {
+export const validateSession = define.middleware(async (ctx: Context<State>): Promise<Response> => {
   const cookies = getCookies(ctx.req.headers);
   const sessionId = cookies["session_id"];
   const jwt = cookies["sb_jwt"];
@@ -76,7 +78,6 @@ export const validateSession = define.middleware(async (ctx) => {
   }
 
   const database = getDatabase(jwt);
-
   const { data: sessionData } = await database
     .from("sessions")
     .select("id, user_id, token, expires_at")
@@ -114,7 +115,7 @@ export const validateSession = define.middleware(async (ctx) => {
 // -------------------------
 // Signup for room membership
 // -------------------------
-export const signupForMembership = define.middleware(async (ctx) => {
+export const signupForMembership = define.middleware(async (ctx: Context<State>): Promise<Response> => {
   const userId = ctx.state.auth?.userId;
   const sessionId = ctx.state.auth?.sessionId;
   const roomId = ctx.params.id;
@@ -152,19 +153,17 @@ export const signupForMembership = define.middleware(async (ctx) => {
         500,
       );
     }
-
     console.log(`✅ User ${userId} joined room ${roomId}`);
   } else {
     console.log(`User ${userId} is already a member of room ${roomId}`);
   }
-
   return await ctx.next();
 });
 
 // -------------------------
 // Get username from form
 // -------------------------
-export const getUser = define.middleware(async (ctx) => {
+export const getUser = define.middleware(async (ctx: Context<State>): Promise<Response> => {
   const form = await ctx.req.formData();
   const username = form.get("username")?.toString()?.trim();
 
@@ -177,7 +176,7 @@ export const getUser = define.middleware(async (ctx) => {
 // -------------------------
 // Restore session from cookies
 // -------------------------
-export const restoreSession = define.middleware(async (ctx) => {
+export const restoreSession = define.middleware(async (ctx: Context<State>): Promise<Response> => {
   const cookies = getCookies(ctx.req.headers);
   const session = await restoreUserSession(cookies);
 
@@ -192,7 +191,7 @@ export const restoreSession = define.middleware(async (ctx) => {
 // Create anonymous session
 // -------------------------
 // // needs some fix and patches
-export const createAnonSession = define.middleware(async (ctx) => {
+export const createAnonSession = define.middleware(async (ctx: Context<State>): Promise<Response> => {
   const auth = ctx.state.auth;
 
   if (auth?.jwt && auth?.userId && auth?.sessionId) {

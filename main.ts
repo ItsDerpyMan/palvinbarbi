@@ -13,7 +13,7 @@ app.use(staticFiles());
 // app.use(exampleLoggerMiddleware);
 app.get("/", (ctx: Context<utils.State>) => ctx.redirect("/rooms"));
 // api/rooms.ts
-app.get("/api/rooms", async (_ctx: Context<utils.State>) => {
+app.get("/api/rooms", async (_ctx: Context<utils.State>): Promise<Response> => {
   const { data, error } = await getDatabase().from("rooms").select("*");
   if (error) {
     console.warn("database error:", error);
@@ -32,18 +32,8 @@ app.post(
   middlewares.createAnonSession,
   (ctx: Context<utils.State>) => {
     console.log("✅ Authenticated user:", ctx.state.auth);
+    return ctx.redirect(`/rooms/${ctx.params.id}?signup=1`, 303);
+  },
+);
 
-    return ctx.redirect(`/rooms/${ctx.params.id}`);
-  },
-);
-app.get(
-  "/rooms/:id",
-  middlewares.Validation,
-  middlewares.validateSession,
-  middlewares.signupForMembership,
-  (ctx: Context<utils.State>) => {
-    console.log("✅ signed up for the room.");
-    return ctx.redirect(`/rooms/${ctx.params.id}`);
-  },
-);
 app.fsRoutes();

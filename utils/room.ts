@@ -1,6 +1,4 @@
 import { getDatabase } from "./database/database.ts";
-import type { Context } from "fresh";
-import type { State } from "./utils.ts";
 
 // TODO GetCookies and fetch the jwt key from them and get query the database safely
 //
@@ -18,7 +16,6 @@ export async function exist(
     .eq("id", id)
     .limit(1)
     .maybeSingle<{ id: string }>();
-
   if (error) return false;
   return data !== null;
 }
@@ -35,7 +32,6 @@ export async function capacity(
     .from("room_memberships")
     .select("room_id", { count: "exact", head: true })
     .eq("room_id", id);
-
   if (error) return -1;
 
   // If count is null or undefined, return 0
