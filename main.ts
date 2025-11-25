@@ -1,19 +1,14 @@
 import { App, Context, staticFiles } from "fresh";
 import * as middlewares from "./utils/middlewares.ts";
 import * as utils from "./utils/utils.ts";
+import * as handler from "./utils/handlers.ts";
 import { getDatabase } from "./utils/database/database.ts";
-//import type { Room } from "./utils/database/database.ts";
+import { game_app } from "./app_game/main.ts";
 
-export const app = new App<utils.State>();
-app.use(staticFiles());
-// const exampleLoggerMiddleware = define.middleware((ctx) => {
-//   console.log(`${ctx.req.method} ${ctx.req.url}`);
-//   return ctx.next();
-// });
-// app.use(exampleLoggerMiddleware);
-app.get("/", (ctx: Context<utils.State>) => ctx.redirect("/rooms"));
+export const app = new App().use(staticFiles());
+
 // api/rooms.ts
-app.get("/api/rooms", async (_ctx: Context<utils.State>): Promise<Response> => {
+app.get("/api/rooms", async (_ctx): Promise<Response> => {
   const { data, error } = await getDatabase().from("rooms").select("*");
   if (error) {
     console.warn("database error:", error);
@@ -35,5 +30,6 @@ app.post(
     return ctx.redirect(`/rooms/${ctx.params.id}?signup=1`, 303);
   },
 );
-
+app.get("/api/public-keys", () => handler.getPublicKeys.GET());
+app.mountApp("./rooms/", game_app);
 app.fsRoutes();

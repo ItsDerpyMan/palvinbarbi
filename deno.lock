@@ -6,8 +6,10 @@
     "jsr:@deno/loader@~0.3.3": "0.3.9",
     "jsr:@fresh/build-id@1": "1.0.1",
     "jsr:@fresh/core@2": "2.2.0",
+    "jsr:@fresh/core@^2.0.0-alpha.18": "2.2.0",
     "jsr:@fresh/core@^2.1.1": "2.2.0",
     "jsr:@fresh/core@^2.2.0": "2.2.0",
+    "jsr:@fresh/examples@^1.0.1": "1.0.1",
     "jsr:@fresh/plugin-vite@1.0.4": "1.0.4",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/dotenv@~0.225.5": "0.225.5",
@@ -19,6 +21,7 @@
     "jsr:@std/http@^1.0.21": "1.0.22",
     "jsr:@std/http@^1.0.22": "1.0.22",
     "jsr:@std/internal@^1.0.10": "1.0.12",
+    "jsr:@std/json@^1.0.2": "1.0.2",
     "jsr:@std/jsonc@^1.0.2": "1.0.2",
     "jsr:@std/media-types@^1.1.0": "1.1.0",
     "jsr:@std/path@1": "1.1.2",
@@ -31,6 +34,8 @@
     "npm:@babel/preset-react@^7.27.1": "7.28.5_@babel+core@7.28.5",
     "npm:@mjackson/node-fetch-server@0.7": "0.7.0",
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
+    "npm:@preact/signals@^1.2.3": "1.3.2_preact@10.27.2",
+    "npm:@preact/signals@^2.2.1": "2.5.1_preact@10.27.2",
     "npm:@preact/signals@^2.5.0": "2.5.1_preact@10.27.2",
     "npm:@prefresh/vite@^2.4.8": "2.4.11_preact@10.27.2_vite@7.2.2__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
     "npm:@supabase/auth-js@2.72.0": "2.72.0",
@@ -43,9 +48,11 @@
     "npm:@types/node@*": "24.2.0",
     "npm:esbuild-wasm@~0.25.11": "0.25.12",
     "npm:esbuild@0.25.7": "0.25.7",
+    "npm:esbuild@~0.25.5": "0.25.7",
     "npm:preact-render-to-string@^6.6.3": "6.6.3_preact@10.27.2",
     "npm:preact@^10.27.0": "10.27.2",
     "npm:preact@^10.27.2": "10.27.2",
+    "npm:process@~0.11.10": "0.11.10",
     "npm:tailwindcss@^4.1.17": "4.1.17",
     "npm:timeago.js@^4.0.2": "4.0.2",
     "npm:vite@7.2.2": "7.2.2_@types+node@24.2.0_picomatch@4.0.3",
@@ -56,7 +63,8 @@
       "integrity": "04ddd0fca9416d8a2866263928a53b9d5ed08dfca064d64504a0aaf9800c709e",
       "dependencies": [
         "jsr:@deno/loader@~0.3.3",
-        "jsr:@std/path@^1.1.1"
+        "jsr:@std/path@^1.1.1",
+        "npm:esbuild@~0.25.5"
       ]
     },
     "@deno/loader@0.3.9": {
@@ -84,10 +92,19 @@
         "jsr:@std/semver",
         "jsr:@std/uuid",
         "npm:@opentelemetry/api",
-        "npm:esbuild",
+        "npm:@preact/signals@^2.2.1",
         "npm:esbuild-wasm",
+        "npm:esbuild@0.25.7",
         "npm:preact-render-to-string",
         "npm:preact@^10.27.0",
+        "npm:preact@^10.27.2"
+      ]
+    },
+    "@fresh/examples@1.0.1": {
+      "integrity": "df5f3521ba02639ba4d3b5a4d57ab9e9048dd4f3752e71739161b1d501fae247",
+      "dependencies": [
+        "jsr:@fresh/core@^2.0.0-alpha.18",
+        "npm:@preact/signals@^1.2.3",
         "npm:preact@^10.27.2"
       ]
     },
@@ -136,8 +153,14 @@
     "@std/internal@1.0.12": {
       "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
     },
+    "@std/json@1.0.2": {
+      "integrity": "d9e5497801c15fb679f55a2c01c7794ad7a5dfda4dd1bebab5e409cb5e0d34d4"
+    },
     "@std/jsonc@1.0.2": {
-      "integrity": "909605dae3af22bd75b1cbda8d64a32cf1fd2cf6efa3f9e224aba6d22c0f44c7"
+      "integrity": "909605dae3af22bd75b1cbda8d64a32cf1fd2cf6efa3f9e224aba6d22c0f44c7",
+      "dependencies": [
+        "jsr:@std/json"
+      ]
     },
     "@std/media-types@1.1.0": {
       "integrity": "c9d093f0c05c3512932b330e3cc1fe1d627b301db33a4c2c2185c02471d6eaa4"
@@ -516,6 +539,13 @@
     },
     "@preact/signals-core@1.12.1": {
       "integrity": "sha512-BwbTXpj+9QutoZLQvbttRg5x3l5468qaV2kufh+51yha1c53ep5dY4kTuZR35+3pAZxpfQerGJiQqg34ZNZ6uA=="
+    },
+    "@preact/signals@1.3.2_preact@10.27.2": {
+      "integrity": "sha512-naxcJgUJ6BTOROJ7C3QML7KvwKwCXQJYTc5L/b0eEsdYgPB6SxwoQ1vDGcS0Q7GVjAenVq/tXrybVdFShHYZWg==",
+      "dependencies": [
+        "@preact/signals-core",
+        "preact"
+      ]
     },
     "@preact/signals@2.5.1_preact@10.27.2": {
       "integrity": "sha512-VPjk5YFt7i11Fi4UK0tzaEe5xLwfhUxXL3l89ocxQ5aPz7bRo8M5+N73LjBMPklyXKYKz6YsNo4Smp8n6nplng==",
@@ -1059,6 +1089,9 @@
     "preact@10.27.2": {
       "integrity": "sha512-5SYSgFKSyhCbk6SrXyMpqjb5+MQBgfvEKE/OC+PujcY34sOpqtr+0AZQtPYx5IA6VxynQ7rUPCtKzyovpj9Bpg=="
     },
+    "process@0.11.10": {
+      "integrity": "sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A=="
+    },
     "rollup@4.53.3": {
       "integrity": "sha512-w8GmOxZfBmKknvdXU1sdM9NHcoQejwF/4mNgj2JuEEdRaHwwF12K7e9eXn1nLZ07ad+du76mkVsyeb2rKGllsA==",
       "dependencies": [
@@ -1168,12 +1201,14 @@
   "workspace": {
     "dependencies": [
       "jsr:@fresh/core@^2.2.0",
+      "jsr:@fresh/examples@^1.0.1",
       "jsr:@fresh/plugin-vite@1.0.4",
       "jsr:@std/http@^1.0.22",
       "jsr:@supabase/supabase-js@^2.58.0",
       "npm:@preact/signals@^2.5.0",
       "npm:@tailwindcss/vite@^4.1.17",
       "npm:preact@^10.27.2",
+      "npm:process@~0.11.10",
       "npm:tailwindcss@^4.1.17",
       "npm:timeago.js@^4.0.2",
       "npm:vite@^7.2.2"

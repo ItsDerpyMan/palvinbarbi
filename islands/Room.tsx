@@ -3,7 +3,6 @@ import { Button } from "../components/Button.tsx";
 import { TimeStamp } from "../components/TimeStamp.tsx";
 import { PlayerCount } from "../components/PlayerCount.tsx";
 import type { Room } from "../utils/database/database.ts";
-import { useEffect } from "preact/hooks";
 
 interface RoomProps {
   key?: string;
@@ -14,10 +13,6 @@ interface RoomProps {
 export default function RoomIsland({ data, input }: RoomProps) {
   const room = useSignal(data);
   const count = useSignal<number>(0);
-
-  useEffect(() => {
-    console.log(`User ${input.value} joined ${data.name}`);
-  }, [input.value]);
 
   const handleJoin = async () => {
     if (!input.value.trim()) {
