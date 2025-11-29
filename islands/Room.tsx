@@ -11,47 +11,59 @@ interface RoomProps {
   input: Signal<string>;
 }
 export default function RoomIsland({ data, input }: RoomProps) {
-  const room = useSignal(data);
-  const count = useSignal<number>(0);
+    const room = useSignal(data);
+    const count = useSignal<number>(0);
 
-  const handleJoin = async () => {
-    if (!input.value.trim()) {
-      alert("Please enter a username!");
-      return;
+    function getCookie(name: string): string | null {
+        const value = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith(name + "="))
+            ?.split("=")[1];
+
+        return value ? decodeURIComponent(value) : null;
     }
 
-    const formData = new FormData();
-    formData.append("username", input.value);
+    const handleJoin = async () => {
+        if (!input.value.trim()) {
+            alert("Please enter a username!");
+            return;
+        }
 
-    console.log(`POST req: /api/rooms/${data.id}`);
-    const res = await fetch(`/api/rooms/${data.id}`, {
-      method: "POST",
-      body: formData,
-    });
+        const formData = new FormData();
+        formData.append("username", input.value);
 
-    if (!res.ok) {
-      console.error("Failed:", await res.text());
-      return;
-    }
-  };
+        const redirectUrl = `/api/signup?room=${data.id}`;    // clean redirect
+        const encodedRedirect = encodeURIComponent(redirectUrl);
 
-  return (
-    <div class="card">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-semibold truncate">{room.value.name}</h2>
-        <span class="text-sm text-gray-500">{room.value.id}</span>
-      </div>
+        const session = getCookie("session_id");
 
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-          <Button id="joinButton" class="join-button" onClick={handleJoin}>
-            Join
-          </Button>
+        let loginUrl = `/api/login?redirect=${encodedRedirect}`;
+        if (session) {
+            loginUrl += `&session=${session}`;   // only added to /api/login
+        }
+
+        const res = await fetch(loginUrl, {
+            method: "POST",
+            body: formData,
+        });
+        if (!res.ok) {
+            console.error("Failed:", await res.text());
+            return;
+        }
+        console.log("Updated cookies:", document.cookie);
+    };
+    return (
+        <div class="card">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold truncate">{room.value.name}</h2>
+                <span class="text-sm text-gray-500">{room.value.id}</span>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <Button onClick={handleJoin}>Join</Button>
+                <TimeStamp time={Date.parse(room.value.created_at)} />
+                <PlayerCount count={count.value} />
+            </div>
         </div>
-
-        <TimeStamp time={Date.parse(room.value.created_at)} />
-        <PlayerCount count={count.value} class="player-count" />
-      </div>
-    </div>
-  );
+    );
 }

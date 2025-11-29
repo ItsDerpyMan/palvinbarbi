@@ -1,9 +1,7 @@
-import RoomController from "../islands/RoomController.tsx";
-import MainPage from "./index.tsx";
 import { define } from "../utils/utils.ts";
 import { Partial } from "fresh/runtime";
 
-export default define.page(function App() {
+export default define.page(function App({ Component}) {
   return (
     <html>
       <head>
@@ -13,9 +11,7 @@ export default define.page(function App() {
       </head>
       <body f-client-nav>
         <Partial name="body">
-          <MainPage>
-            <RoomController />
-          </MainPage>
+            <Component/>
         </Partial>
       </body>
     </html>

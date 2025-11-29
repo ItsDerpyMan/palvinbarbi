@@ -18,16 +18,6 @@ export default function RoomController() {
   //   url!,
   //   key!,
   // );
-  console.log("db instated");
-  useEffect(() => {
-    console.log("Running");
-    getAnonDatabase()
-      .from("rooms")
-      .select("*")
-      .then((res) => {
-        rooms.value = res.data ?? [];
-      });
-  });
   // useEffect(() => {
   //   database
   //     .from("rooms")

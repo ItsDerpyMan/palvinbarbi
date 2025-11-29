@@ -35,7 +35,7 @@ export async function verifyCookies(
 
   const { data: sessionData, error } = await getDatabase(jwt)
     .from("sessions")
-    .select("id, user_id, token, expires_at")
+    .select("id, user_id, expires_at")
     .eq("id", session)
     .single<Tables<"sessions">>();
 
