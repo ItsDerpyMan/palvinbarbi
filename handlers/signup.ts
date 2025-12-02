@@ -2,16 +2,16 @@ import { define } from "../utils/utils.ts";
 import {
   database,
   databaseWithKey,
-} from "../supabase/functions/_shared/supabase_client.ts";
+} from "../utils/database/database.ts";
 
 /**
  * POST /api/signup?room=id&session=id
  */
 export const handleSignup = define.handlers({
-  POST(ctx) {
-    const URL = new URL(ctx.request.url);
-    const room = URL.searchParams.get("room");
-    const session = URL.searchParams.get("session");
+  async POST(ctx) {
+    const url = new URL(ctx.req.url);
+    const room = url.searchParams.get("room");
+    const session = url.searchParams.get("session");
     if (!room || !session) {
       return jsonError("Room or session id missing", 400);
     }
@@ -20,22 +20,23 @@ export const handleSignup = define.handlers({
       // 2. check room: can join?
       // 3. signup for membership
       // 4. forward for api/join
-      const key = getJWT(ctx.request);
+      const key = getJWT(ctx.req);
       if (!key) {
         throw new Error("Invalid credentials");
       }
-      if (!(await validSession(ctx.request))) {
+
+      if (!(await validSession(ctx.req))) {
         throw new Error("Invalid or expired session");
       }
       // Does room exists
-      if (!(await roomExists(ctx.request))) {
+      if (!(await roomExists(ctx.req))) {
         throw new Error("Room not exists");
       }
       // has enough space to join
-      const count = await roomPlayerCount(ctx.request);
+      const count = await roomPlayerCount(ctx.req);
       if (count >= 5) throw new Error("Room is full");
 
-      await signUp(ctx.request);
+      await signUp(ctx.req);
 
       // if success
       const headers = new Headers({ "Content-Type": "application/json" });

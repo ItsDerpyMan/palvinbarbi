@@ -1,7 +1,5 @@
 import { getDatabase } from "./database/database.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
-import type { Context } from "fresh";
-import type { State } from "./utils.ts";
 import type { AuthApiError, Session, User } from "@supabase/supabase-js";
 import type { Tables, TablesInsert } from "./database/database.types.ts";
 
@@ -13,6 +11,7 @@ export interface Auth {
   userId?: string;
   username?: string;
   sessionId?: string;
+  roomId?: string;
 }
 
 // -------------------------

@@ -1,26 +1,32 @@
 // utils/getDatabase.ts
-import type { Database, Tables } from "./database.types.ts";
 import { createClient } from "@supabase/supabase-js";
+import { Tables } from "./database.types.ts";
 
-export function getDatabase(jwt?: string, anon: boolean = false) {
-  const url = Deno.env.get("PUBLIC_SUPABASE_URL")!;
-  const anon_key = Deno.env.get("PUBLIC_SUPABASE_ANON_KEY")!;
-  const service_key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-  const key = anon ? anon_key : service_key;
-
-  return createClient<Database>(
-    url,
-    key,
-    jwt
-      ? {
-        global: {
-          headers: { Authorization: `Bearer ${jwt}` },
+export function database(req: Request) {
+    return createClient(
+        Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
+        Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
+        {
+            global: {
+                headers: { Authorization: req.headers.get("Authorization")! },
+            },
         },
-      }
-      : undefined,
-  );
+    );
 }
+export function databaseWithKey(key?: string | null) {
+    return createClient(
+        Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
+        Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
+        key
+            ? {
+                global: {
+                    headers: { Authorization: `Bearer ${key}` },
+                },
+            }
+            : undefined,
+    );
+}
+
 export type Room = Tables<"rooms">;
 export type Session = Tables<"sessions">;
 export type User = Tables<"users">;

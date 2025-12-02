@@ -7,5 +7,5 @@ const builder = new Builder();
 if (Deno.args.includes("build")) {
   await builder.build();
 } else {
-  await builder.listen(() => import("./main.ts"));
+  await builder.listen(() => import("./main.tsx"));
 }

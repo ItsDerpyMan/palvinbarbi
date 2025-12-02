@@ -1,9 +1,7 @@
 import { define } from "../utils/utils.ts";
 import {
-  database,
   databaseWithKey,
-} from "../supabase/functions/_shared/supabase_client.ts";
-import type { Session, User } from "@supabase/supabase-js";
+} from "../utils/database/database.ts";
 import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
 /**
  * /api/login?session={id}
@@ -11,17 +9,16 @@ import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
  * /api/login?session={id}&redirect=/api/signup?room={id}
  */
 export const handleLogin = define.handlers({
-  POST(ctx) {
-    const URL = new URL(ctx.request.url);
-    const redirect = URL.searchParams.get("redirect");
+  async POST(ctx) {
+    const url = new URL(ctx.req.url);
+    const redirect = url.searchParams.get("redirect");
     try {
       // try restore the session
-      const { jwt: restored_key, session: session_id } =
-        await tryRestoreSession(ctx.request);
+      const { jwt: restored_key, session: session_id } = await (tryRestoreSession(ctx.req)) ?? {};
       if (!restored_key) {
         console.info("No Authorization key (JWT)");
         // registering new user
-        const username = await getUserFormdata(ctx.request) ?? "Guest";
+        const username = await getUserFormdata(ctx.req) ?? "Guest";
         const { user_id, jwt, refreshToken } = await signInAnonymously(
           username,
         );
@@ -38,7 +35,11 @@ export const handleLogin = define.handlers({
         );
         headers.append(
           "Set-Cookie",
-          `session_id=${session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
+          `session=${new_session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
+        );
+        headers.append(
+            "Set-Cookie",
+            `user=${user_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
         );
         // redirecting for example:
         // /api/login?session={id}&redirect=/api/join?room={id}
@@ -53,7 +54,7 @@ export const handleLogin = define.handlers({
       );
       headers.append(
         "Set-Cookie",
-        `session_id=${session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
+        `session=${session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
       );
       if (redirect) headers.append("Location", redirect);
       return new Response(JSON.stringify({ ok: true }), { headers });
@@ -105,9 +106,7 @@ async function signInAnonymously(username: string): Promise<{
   refreshToken: string;
 }> {
   const { data, error } = await databaseWithKey().auth
-    .signInAnonymously() as Response<
-      { user: User; session: Session }
-    >;
+    .signInAnonymously();
 
   if (error || !data?.user || !data?.session) {
     throw new Error(
@@ -121,7 +120,7 @@ async function signInAnonymously(username: string): Promise<{
   const { access_token: jwt, refresh_token: refreshToken } = session;
 
   // Ensure user exists in the database
-  await getDatabase(jwt)
+  await databaseWithKey(jwt)
     .from("users")
     .upsert(
       {
@@ -146,7 +145,7 @@ function getHeader(req: Request): string {
 }
 async function tryRestoreSession(
   req: Request,
-): Promise<{ jwt: string; session: string } | null> {
+): Promise<{ jwt: string, session: string } | null> {
   // Getting the JWT key and session ID from the header
   const token = getHeader(req);
   const session_id = new URL(req.url).searchParams.get("session");
