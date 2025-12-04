@@ -2,6 +2,7 @@ import { App, Context, staticFiles } from "fresh";
 import { database } from "./utils/database/database.ts";
 import { game_app } from "./app_game/main.ts";
 import type { Auth } from "./utils/auth.ts";
+import DebugContext from "./components/./DebugContext.tsx";
 export const app = new App<Auth>().use(staticFiles());
 
 // api/rooms.ts
@@ -69,23 +70,28 @@ app.use(async (ctx) => {
   //}
   return res;
 });
-app.get("/dev/ctx", (ctx: Context<Auth>) => ctx.render(
-    <div>
-        <h1>Debug</h1>
-        key: {ctx.state.jwt},
-        session id: {ctx.state.sessionId},
-        room id: {ctx.state.roomId},
-        user id: {ctx.state.userId},
-        username: {ctx.state.username}
-    </div>
-))
+app.post("/debug/ctx", (ctx: Context<Auth>) => {
+  const body = JSON.stringify({
+    key: ctx.state.jwt,
+    sessionId: ctx.state.sessionId,
+    roomId: ctx.state.roomId,
+    userId: ctx.state.userId,
+    username: ctx.state.username
+  });
+  return new Response(body, { headers: { "Content-Type": "application/json" }});
+})
+app.post("/api/public-keys",
+    async () => {
+      const handler = await import("./handlers/publicKeys.ts");
+      return handler.getPublicKeys.POST();
+    },
+);
 /**
 app.post(
   "/api/join",
   async () => await import("./handlers/join.ts"),
 );
 
-app.get("/api/public-keys", () => handler.getPublicKeys.GET());
 app.mountApp("./rooms/", game_app);
     */
 app.fsRoutes();
