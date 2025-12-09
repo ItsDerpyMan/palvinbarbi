@@ -7,11 +7,11 @@ import type { Tables, TablesInsert } from "./database/database.types.ts";
 // Auth interface
 // -------------------------
 export interface Auth {
-  jwt?: string,
-  userId?: string,
-  username?: string,
-  sessionId?: string,
-  roomId?: string,
+  jwt?: string;
+  userId?: string;
+  username?: string;
+  sessionId?: string;
+  roomId?: string;
 }
 
 // -------------------------

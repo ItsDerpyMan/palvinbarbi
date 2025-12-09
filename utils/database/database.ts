@@ -3,28 +3,28 @@ import { createClient } from "@supabase/supabase-js";
 import { Tables } from "./database.types.ts";
 
 export function database(req: Request) {
-    return createClient(
-        Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
-        Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
-        {
-            global: {
-                headers: { Authorization: req.headers.get("Authorization")! },
-            },
-        },
-    );
+  return createClient(
+    Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
+    Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
+    {
+      global: {
+        headers: { Authorization: req.headers.get("Authorization")! },
+      },
+    },
+  );
 }
 export function databaseWithKey(key?: string | null) {
-    return createClient(
-        Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
-        Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
-        key
-            ? {
-                global: {
-                    headers: { Authorization: `Bearer ${key}` },
-                },
-            }
-            : undefined,
-    );
+  return createClient(
+    Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
+    Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
+    key
+      ? {
+        global: {
+          headers: { Authorization: `Bearer ${key}` },
+        },
+      }
+      : undefined,
+  );
 }
 
 export type Room = Tables<"rooms">;

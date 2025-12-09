@@ -3,29 +3,25 @@ import UsernameInput from "./Username.tsx";
 import RoomIsland from "./Room.tsx";
 import type { Room } from "../utils/database/database.ts";
 import { useEffect } from "preact/hooks";
-import { getAnonDatabase } from "../utils/database/database.client.ts";
 import { createClient } from "@supabase/supabase-js";
+import {Database} from "../utils/database/database.types.ts";
 export default function RoomController() {
   const username = useSignal("");
-  const rooms = useSignal<any[]>([]);
+  const rooms = useSignal<Room[]>([]);
 
-  // const url = Deno.env.get("PUBLIC_SUPABASE_URL");
-  // const url = process.env.PUBLIC_SUPABASE_URL;
-  // const key = Deno.env.get("PUBLIC_SUPABASE_ANON_KEY");
-  // const key = process.env.PUBLIC_SUPABASE_ANON_KEY;
-  // console.log(`${url}, ${key}`);
-  // const db = createClient(
-  //   url!,
-  //   key!,
-  // );
-  // useEffect(() => {
-  //   database
-  //     .from("rooms")
-  //     .select("*")
-  //     .then((res) => {
-  //       rooms.value = res.data ?? [];
-  //     });
-  //
+   useEffect(() => {
+     void fetchApiKeys()
+         .then(({ url, key }) => {
+             return createClient<Database>(url, key).from("rooms").select("*");
+         })
+         .then((res) => {
+             rooms.value = res.data ?? [];
+         })
+         .catch((err) => {
+             console.error(err);
+             rooms.value = [];
+         });
+   }, []);
   //   const subscription = database
   //     .channel("public:rooms")
   //     .on("postgres_changes", {
@@ -66,4 +62,13 @@ export default function RoomController() {
       </ul>
     </>
   );
+}
+
+async function fetchApiKeys() {
+  const res = await fetch("/api/public-keys", {
+    method: "POST",
+    headers: { "Content-Type": "Application/json" },
+  });
+  const body: { url: string, key: string } = JSON.parse(await res.text());
+  return body;
 }

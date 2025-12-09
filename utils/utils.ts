@@ -1,5 +1,11 @@
 // ../utils/utils.ts
 import { createDefine } from "fresh";
-import type { Auth} from "./auth.ts";
 
+export interface Auth {
+    jwt?: string;
+    userId?: string;
+    username?: string;
+    sessionId?: string;
+    roomId?: string;
+}
 export const define = createDefine<Auth>();

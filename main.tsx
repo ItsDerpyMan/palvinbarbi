@@ -1,12 +1,12 @@
 import { App, Context, staticFiles } from "fresh";
 import { database } from "./utils/database/database.ts";
 import { game_app } from "./app_game/main.ts";
-import type { Auth } from "./utils/auth.ts";
+import type { Auth } from "./utils/utils.ts";
 import DebugContext from "./components/./DebugContext.tsx";
 export const app = new App<Auth>().use(staticFiles());
 
 // api/rooms.ts
-app.get("/api/rooms", async (ctx: Context<Auth>)=> {
+app.get("/api/rooms", async (ctx: Context<Auth>) => {
   const { data, error } = await database(ctx.req).from("rooms").select("*");
   if (error) {
     console.warn("database error:", error);
@@ -17,7 +17,6 @@ app.get("/api/rooms", async (ctx: Context<Auth>)=> {
     headers: { "Content-Type": "application/json" },
   });
 });
-
 
 app.post(
   "/api/login",
@@ -48,7 +47,7 @@ app.use(async (ctx) => {
   if (sessionId) ctx.state.sessionId = sessionId;
   if (roomId) ctx.state.roomId = roomId;
   // Optionally strip existing Authorization header (prevent spoofing)
-  const res = await ctx.next()
+  const res = await ctx.next();
   if (jwt) res.headers.set("Authorization", `Bearer ${jwt}`);
 
   // 1. /api/login?session={id}&redirect=/api/signup?room={id}
@@ -76,16 +75,17 @@ app.post("/debug/ctx", (ctx: Context<Auth>) => {
     sessionId: ctx.state.sessionId,
     roomId: ctx.state.roomId,
     userId: ctx.state.userId,
-    username: ctx.state.username
+    username: ctx.state.username,
   });
-  return new Response(body, { headers: { "Content-Type": "application/json" }});
-})
-app.post("/api/public-keys",
-    async () => {
-      const handler = await import("./handlers/publicKeys.ts");
-      return handler.getPublicKeys.POST();
-    },
-);
+  return new Response(body, {
+    headers: { "Content-Type": "application/json" },
+  });
+});
+app.post("/api/public-keys", async () => {
+  console.log("POST /api/public-keys");
+  const handler = await import("./handlers/publicKeys.ts");
+  return handler.getPublicKeys.POST();
+});
 /**
 app.post(
   "/api/join",

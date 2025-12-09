@@ -1,7 +1,7 @@
 import { define } from "../utils/utils.ts";
 import { Partial } from "fresh/runtime";
 
-export default define.page(function App({ Component}) {
+export default define.page(function App({ Component }) {
   return (
     <html>
       <head>
@@ -11,7 +11,7 @@ export default define.page(function App({ Component}) {
       </head>
       <body f-client-nav>
         <Partial name="body">
-            <Component/>
+          <Component />
         </Partial>
       </body>
     </html>

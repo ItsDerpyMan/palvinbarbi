@@ -1,8 +1,5 @@
 import { define } from "../utils/utils.ts";
-import {
-  database,
-  databaseWithKey,
-} from "../utils/database/database.ts";
+import { database, databaseWithKey } from "../utils/database/database.ts";
 
 /**
  * POST /api/signup?room=id&session=id

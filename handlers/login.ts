@@ -1,7 +1,5 @@
 import { define } from "../utils/utils.ts";
-import {
-  databaseWithKey,
-} from "../utils/database/database.ts";
+import { databaseWithKey } from "../utils/database/database.ts";
 import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
 /**
  * /api/login?session={id}
@@ -14,7 +12,8 @@ export const handleLogin = define.handlers({
     const redirect = url.searchParams.get("redirect");
     try {
       // try restore the session
-      const { jwt: restored_key, session: session_id } = await (tryRestoreSession(ctx.req)) ?? {};
+      const { jwt: restored_key, session: session_id } =
+        await (tryRestoreSession(ctx.req)) ?? {};
       if (!restored_key) {
         console.info("No Authorization key (JWT)");
         // registering new user
@@ -38,8 +37,8 @@ export const handleLogin = define.handlers({
           `session=${new_session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
         );
         headers.append(
-            "Set-Cookie",
-            `user=${user_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
+          "Set-Cookie",
+          `user=${user_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
         );
         // redirecting for example:
         // /api/login?session={id}&redirect=/api/join?room={id}
@@ -145,7 +144,7 @@ function getHeader(req: Request): string {
 }
 async function tryRestoreSession(
   req: Request,
-): Promise<{ jwt: string, session: string } | null> {
+): Promise<{ jwt: string; session: string } | null> {
   // Getting the JWT key and session ID from the header
   const token = getHeader(req);
   const session_id = new URL(req.url).searchParams.get("session");
