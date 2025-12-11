@@ -1,6 +1,7 @@
-import { define } from "../utils/utils.ts";
+import {Auth, define} from "../utils/utils.ts";
 import { databaseWithKey } from "../utils/database/database.ts";
 import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
+import Http = Deno.errors.Http;
 /**
  * /api/login?session={id}
  * /api/login?session={id}&redirect=/api/join?room={id}
@@ -8,17 +9,20 @@ import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
  */
 export const handleLogin = define.handlers({
   async POST(ctx) {
-    const url = new URL(ctx.req.url);
-    const redirect = url.searchParams.get("redirect");
     console.info(`POST: ${url} - Redirected to: ${redirect}`)
     try {
+      const url = new URL(ctx.req.url);
+      const redirect = url.searchParams.get("redirect");
+      if (!redirect) throw new Error("Redirect not found");
+
       // try restore the session
       const { jwt: restored_key, session: session_id } =
-        await (tryRestoreSession(ctx.req)) ?? {};
+        await (tryRestoreSession(ctx)) ?? {}; // TODO have workaround on this return value deconstruction
       if (!restored_key) {
-        console.info("No Authorization key (JWT)");
-        // registering new user
-        const username = await getUserFormdata(ctx.req) ?? "Guest";
+          // registering new user
+          console.info( "No Authorization key (JWT)");
+          const username = await getUserFormdata(ctx.req) ?? "Guest";
+
         const { user_id, jwt, refreshToken } = await signInAnonymously(
           username,
         );
@@ -30,37 +34,23 @@ export const handleLogin = define.handlers({
         // storing the neccessary identification on the client.
         console.info("Storing metadata in the cookies.");
         const headers = new Headers({ "Content-Type": "application/json" });
-        headers.append(
-          "Set-Cookie",
-          `jwt=${jwt}; HttpOnly; Secure; Path=/; SameSite=Lax`,
-        );
-        headers.append(
-          "Set-Cookie",
-          `session=${new_session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
-        );
-        headers.append(
-          "Set-Cookie",
-          `user=${user_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
-        );
+          appendCookie(headers, "jwt", jwt);
+          appendCookie(headers, "session", new_session_id);
+          appendCookie(headers, "user", user_id);
+          appendCookie(headers, "username", username);
+
         // redirecting for example:
         // /api/login?session={id}&redirect=/api/join?room={id}
         // /api/login?session={id}&redirect=/api/signup?room={id}
-        if (redirect) headers.append("Location", redirect);
         return new Response(JSON.stringify({ ok: true, redirect: redirect }), { headers });
       }
+      console.info("Restored session");
       const headers = new Headers({ "Content-Type": "application/json" });
-      headers.append(
-        "Set-Cookie",
-        `jwt=${restored_key}; HttpOnly; Secure; Path=/; SameSite=Lax`,
-      );
-      headers.append(
-        "Set-Cookie",
-        `session=${session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
-      );
-      if (redirect) headers.append("Location", redirect);
+        appendCookie(headers, "jwt", restored_key);
+        appendCookie(headers, "session", session_id);
       return new Response(JSON.stringify({ ok: true , redirect: redirect}), { headers });
     } catch (e) {
-      console.error("LOGIN ERROR:", e);
+      console.error("Login error:", e);
       return new Response(JSON.stringify({ error: "Login failed" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -68,6 +58,12 @@ export const handleLogin = define.handlers({
     }
   },
 });
+
+
+const appendCookie = (headers: Headers, key: string, value: string) => headers.append(
+        "Set-Cookie",
+        `${key}=${value}; HttpOnly; Secure; Path=/; SameSite=Lax`);
+
 async function getUserFormdata(req: Request): Promise<string> {
   const form = await req.formData();
   const username = form.get("username")?.toString()?.trim();
@@ -147,16 +143,15 @@ function getHeader(req: Request): string {
   return extract("Authorization");
 }
 async function tryRestoreSession(
-  req: Request,
+  ctx: Context<Auth>,
 ): Promise<{ jwt: string; session: string } | null> {
   console.info("Trying to restore user session.");
   try {
     // Getting the JWT key and session ID from the header
-    const token = getHeader(req);
-    const session_id = new URL(req.url).searchParams.get("session");
-    if (!session_id) throw "Session id is missing";
+    const key = ctx.state.jwt ?? throw "Authentication key is missing";
+    const session_id = ctx.state.session ?? throw "Session id is missing";
     // Fetch the session data to check for expiration
-    const {data: sessionData, error: sessionError} = await databaseWithKey(token)
+    const {data: sessionData, error: sessionError} = await databaseWithKey(key)
         .from("sessions")
         .select("id, expires_at")
         .eq("id", session_id)
@@ -172,14 +167,14 @@ async function tryRestoreSession(
     }
 
     // Try to get user data using the JWT
-    const {error: userError} = await databaseWithKey(token).auth.getUser(token);
+    const {error: userError} = await databaseWithKey(key).auth.getUser(key);
     if (userError) {
       console.info("Failed to retrieve user data from JWT.");
       const restored_key = await restoreJWT(session_id);
       if (!restored_key) return null;
       return {jwt: restored_key, session: session_id};
     }
-    return {jwt: token, session: session_id};
+    return {jwt: key, session: session_id};
   } catch (e) {
     if( typeof e !== "string") console.error(e);
     console.info(e);

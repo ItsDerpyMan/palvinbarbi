@@ -2,33 +2,20 @@ import { define } from "../utils/utils.ts";
 import { database, databaseWithKey } from "../utils/database/database.ts";
 
 /**
- * POST /api/signup?room=id&session=id
+ * POST /api/signup?room=id
  */
 export const handleSignup = define.handlers({
   async POST(ctx) {
     const url = new URL(ctx.req.url);
-    const room = url.searchParams.get("room");
-    const session = url.searchParams.get("session");
-    if (!room || !session) {
-      return jsonError("Room or session id missing", 400);
-    }
     try {
-      // 1. validate session
-      // 2. check room: can join?
-      // 3. signup for membership
-      // 4. forward for api/join
+        const session: string = ctx.state.session ?? throw new Error("Session not found");
+        const room: string = url.searchParams.get("room") ?? throw new Error("Room not found");
       const key = getJWT(ctx.req);
-      if (!key) {
-        throw new Error("Invalid credentials");
-      }
+      if (!key) throw new Error("Invalid credentials");
 
-      if (!(await validSession(ctx.req))) {
-        throw new Error("Invalid or expired session");
-      }
+      if (!(await validSession(ctx.req, session))) throw new Error("Invalid or expired session");
       // Does room exists
-      if (!(await roomExists(ctx.req))) {
-        throw new Error("Room not exists");
-      }
+      if (!(await roomExists(ctx.req))) throw new Error("Room not exists");
       // has enough space to join
       const count = await roomPlayerCount(ctx.req);
       if (count >= 5) throw new Error("Room is full");
@@ -37,14 +24,8 @@ export const handleSignup = define.handlers({
 
       // if success
       const headers = new Headers({ "Content-Type": "application/json" });
-      headers.append(
-        "Set-Cookie",
-        `room=${
-          encodeURIComponent(room)
-        }; HttpOnly; Secure; Path=/; SameSite=Lax`,
-      );
-      headers.append("Location", `/api/join?room=${encodeURIComponent(room)}`);
-      return new Response(JSON.stringify({ ok: true }), {
+      appendCookie(headers, "room", encodeURIComponent(room));
+      return new Response(JSON.stringify({ ok: true, redirect: `/api/join?room=${encodeURIComponent(room)}`}), {
         status: 200,
         headers,
       });
@@ -54,8 +35,11 @@ export const handleSignup = define.handlers({
     }
   },
 });
-async function validSession(req: Request): Promise<boolean> {
-  const session = new URL(req.url).searchParams.get("session");
+const appendCookie = (headers: Headers, key: string, value: string) => headers.append(
+    "Set-Cookie",
+    `${key}=${value}; HttpOnly; Secure; Path=/; SameSite=Lax`);
+
+async function validSession(req: Request, session: string): Promise<boolean> {
   const { data, error } = await database(req)
     .from("sessions")
     .select("expires_at")

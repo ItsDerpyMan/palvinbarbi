@@ -24,33 +24,38 @@ export default function RoomIsland({ data, input }: RoomProps) {
   }
 
   const handleJoin = async () => {
-    if (!input.value.trim()) {
-      alert("Please enter a username!");
-      return;
-    }
-    const redirectUrl = `/api/signup?room=${data.id}`;
-    const encodedRedirect = encodeURIComponent(redirectUrl);
+      try {
+          const redirected = await handleLogin();
+          const signupResponse = await handleSignup(redirected);
+      }
+  }
+  const handleSignup = async (redirect: string): Promise<Response> => {
+      const res = await fetch(redirect, {
+          method: "POST",
+          credentials: "same-origin",
+      }).then((res) => res.json().then(data => setUrlState(data.redirect)));
+      if (!res.ok) {
+          // remove room cookie
+          // Get => /
 
-    const formData = new FormData();
-    formData.append('username', input.value);
-
-    let loginUrl = `/api/login`;
-    const session = getCookie('session');
-    if (session) {
-      loginUrl += `?session=${session}`;
-      loginUrl += `&redirect=${encodedRedirect}`
-    } // only added to /api/login
-    else loginUrl += `?redirect=${encodedRedirect}`;
-
-    const res = await fetch(loginUrl, {
-      method: "POST",
-      body: formData,
-    });
-    if (res.ok) {
-      const { redirect } = await res.json();
-      globalThis.history.replaceState({}, "", redirect); // changes URL instantly
-    } else console.error(res.json().then((e) => e.error));
-  };
+      }
+  }
+  const handleLogin = async () => {
+      if (!input.value.trim()) {
+          alert("Please enter a username!");
+          throw new Error("Please enter a username!");
+      }
+      const redirectUrl = encodeURIComponent(`/api/signup?room=${data.id}`);
+      const url = constructUrl("/api/login", [`redirect=${redirectUrl}`])
+      setUrlState(url);
+      const res = await fetch(url, {
+          method: "POST",
+          body: (): FormData => new FormData().append('username', input.value),
+          credentials: 'include',
+      }).then(() => setUrlState(redirectUrl));
+      if (!res.ok) throw new Error(res.json().then((e) => e.error));
+      return res.json().then(b => b.redirect);
+  }
   return (
     <div class="card">
       <div class="flex justify-between items-center">
@@ -66,3 +71,15 @@ export default function RoomIsland({ data, input }: RoomProps) {
     </div>
   );
 }
+
+function setUrlState(redirect: string):void {
+    globalThis.history.replaceState({}, "", redirect);
+}
+async function setLocation(res: Response):Promise<void> {
+    const { redirect } = await res.json();
+    if(!redirect) throw new Error("Cant redirect to an invalid location!.");
+    globalThis.location.href = redirect;
+}
+const constructUrl = (base: string, params: string[] = []) =>
+    params.length ? `${base}?${params.join('&')}` : base;
+
