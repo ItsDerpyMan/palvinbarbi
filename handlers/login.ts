@@ -10,6 +10,7 @@ export const handleLogin = define.handlers({
   async POST(ctx) {
     const url = new URL(ctx.req.url);
     const redirect = url.searchParams.get("redirect");
+    console.info(`POST: ${url} - Redirected to: ${redirect}`)
     try {
       // try restore the session
       const { jwt: restored_key, session: session_id } =
@@ -27,6 +28,7 @@ export const handleLogin = define.handlers({
           refreshToken,
         );
         // storing the neccessary identification on the client.
+        console.info("Storing metadata in the cookies.");
         const headers = new Headers({ "Content-Type": "application/json" });
         headers.append(
           "Set-Cookie",
@@ -44,7 +46,7 @@ export const handleLogin = define.handlers({
         // /api/login?session={id}&redirect=/api/join?room={id}
         // /api/login?session={id}&redirect=/api/signup?room={id}
         if (redirect) headers.append("Location", redirect);
-        return new Response(JSON.stringify({ ok: true }), { headers });
+        return new Response(JSON.stringify({ ok: true, redirect: redirect }), { headers });
       }
       const headers = new Headers({ "Content-Type": "application/json" });
       headers.append(
@@ -56,7 +58,7 @@ export const handleLogin = define.handlers({
         `session=${session_id}; HttpOnly; Secure; Path=/; SameSite=Lax`,
       );
       if (redirect) headers.append("Location", redirect);
-      return new Response(JSON.stringify({ ok: true }), { headers });
+      return new Response(JSON.stringify({ ok: true , redirect: redirect}), { headers });
     } catch (e) {
       console.error("LOGIN ERROR:", e);
       return new Response(JSON.stringify({ error: "Login failed" }), {
@@ -69,7 +71,7 @@ export const handleLogin = define.handlers({
 async function getUserFormdata(req: Request): Promise<string> {
   const form = await req.formData();
   const username = form.get("username")?.toString()?.trim();
-
+  console.info("Getting userdata from the request.\n- Username: ", username);
   if (!username) {
     throw new Error("Username required!");
   }
@@ -80,6 +82,7 @@ export async function createSession(
   userId: string,
   refreshToken: string,
 ): Promise<Tables<"sessions">> {
+  console.info("Creating a new session with the necessary userdata.");
   if (!jwt) {
     throw new Error("No jwt key is available for session creation.");
   }
@@ -104,6 +107,7 @@ async function signInAnonymously(username: string): Promise<{
   jwt: string;
   refreshToken: string;
 }> {
+  console.info("Signing in anonymously, only with a username. (temporary session)");
   const { data, error } = await databaseWithKey().auth
     .signInAnonymously();
 
@@ -137,7 +141,7 @@ async function signInAnonymously(username: string): Promise<{
 function getHeader(req: Request): string {
   const extract = (name: string): string => {
     const val = req.headers.get(name)?.trim();
-    if (!val) throw new Error(`${name} header is empty`);
+    if (!val) throw `${name} header is empty`;
     return val.replace(/^Bearer\s+/i, "");
   };
   return extract("Authorization");
@@ -145,43 +149,46 @@ function getHeader(req: Request): string {
 async function tryRestoreSession(
   req: Request,
 ): Promise<{ jwt: string; session: string } | null> {
-  // Getting the JWT key and session ID from the header
-  const token = getHeader(req);
-  const session_id = new URL(req.url).searchParams.get("session");
-  if (!session_id) return null;
-  // Fetch the session data to check for expiration
-  const { data: sessionData, error: sessionError } = await databaseWithKey(
-    token,
-  )
-    .from("sessions")
-    .select("id, expires_at")
-    .eq("id", session_id)
-    .single();
+  console.info("Trying to restore user session.");
+  try {
+    // Getting the JWT key and session ID from the header
+    const token = getHeader(req);
+    const session_id = new URL(req.url).searchParams.get("session");
+    if (!session_id) throw "Session id is missing";
+    // Fetch the session data to check for expiration
+    const {data: sessionData, error: sessionError} = await databaseWithKey(token)
+        .from("sessions")
+        .select("id, expires_at")
+        .eq("id", session_id)
+        .single();
 
-  if (sessionError || !sessionData) {
-    console.error("Session not found or error fetching session data.");
+    if (sessionError || !sessionData) {
+      throw new Error("Session not found or error fetching session data.");
+    }
+
+    // Check if session is expired
+    if (new Date(sessionData.expires_at) < new Date()) {
+      throw new Error(`Session ${session_id} has expired.`);
+    }
+
+    // Try to get user data using the JWT
+    const {error: userError} = await databaseWithKey(token).auth.getUser(token);
+    if (userError) {
+      console.info("Failed to retrieve user data from JWT.");
+      const restored_key = await restoreJWT(session_id);
+      if (!restored_key) return null;
+      return {jwt: restored_key, session: session_id};
+    }
+    return {jwt: token, session: session_id};
+  } catch (e) {
+    if( typeof e !== "string") console.error(e);
+    console.info(e);
     return null;
   }
-
-  // Check if session is expired
-  if (new Date(sessionData.expires_at) < new Date()) {
-    console.warn(`Session ${session_id} has expired.`);
-    return null;
-  }
-
-  // Try to get user data using the JWT
-  const { error: userError } = await databaseWithKey(token).auth.getUser(token);
-  if (userError) {
-    console.info("Failed to retrieve user data from JWT.");
-    const restored_key = await restoreJWT(session_id);
-    if (!restored_key) return null;
-    return { jwt: restored_key, session: session_id };
-  }
-
-  return { jwt: token, session: session_id };
 }
 
 async function restoreJWT(id: string): Promise<string> {
+  console.info("Restores the session authentication (JWT) key.");
   // Query refresh token from sessions table
   const { data: sessionData, error } = await databaseWithKey()
     .from("sessions")

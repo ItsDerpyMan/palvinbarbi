@@ -28,29 +28,28 @@ export default function RoomIsland({ data, input }: RoomProps) {
       alert("Please enter a username!");
       return;
     }
-
-    const formData = new FormData();
-    formData.append("username", input.value);
-
-    const redirectUrl = `/api/signup?room=${data.id}`; // clean redirect
+    const redirectUrl = `/api/signup?room=${data.id}`;
     const encodedRedirect = encodeURIComponent(redirectUrl);
 
-    const session = getCookie("session_id");
+    const formData = new FormData();
+    formData.append('username', input.value);
 
-    let loginUrl = `/api/login?redirect=${encodedRedirect}`;
+    let loginUrl = `/api/login`;
+    const session = getCookie('session');
     if (session) {
-      loginUrl += `&session=${session}`; // only added to /api/login
-    }
+      loginUrl += `?session=${session}`;
+      loginUrl += `&redirect=${encodedRedirect}`
+    } // only added to /api/login
+    else loginUrl += `?redirect=${encodedRedirect}`;
 
     const res = await fetch(loginUrl, {
       method: "POST",
       body: formData,
     });
-    if (!res.ok) {
-      console.error("Failed:", await res.text());
-      return;
-    }
-    console.log("Updated cookies:", document.cookie);
+    if (res.ok) {
+      const { redirect } = await res.json();
+      globalThis.history.replaceState({}, "", redirect); // changes URL instantly
+    } else console.error(res.json().then((e) => e.error));
   };
   return (
     <div class="card">
