@@ -1,97 +1,197 @@
-import { define } from "../utils/utils.ts";
-import { database, databaseWithKey } from "../utils/database/database.ts";
+import { setCookie} from "./utils/cookies.ts";
+import {jsonError, validateSession} from "./utils/helpers.ts";
+import { Auth, define } from "../utils/utils.ts";
+import { databaseWithKey } from "../utils/database/database.ts";
+import { Context } from "fresh";
+
+// Configuration
+const MAX_ROOM_PLAYERS = 5;
 
 /**
- * POST /api/signup?room=id
+ * POST /api/signup?room={roomId}
+ * Adds authenticated user to a room
  */
 export const handleSignup = define.handlers({
   async POST(ctx) {
     const url = new URL(ctx.req.url);
+    const roomId = url.searchParams.get("room");
+
+    console.info(`POST: ${url}`);
+
+    if (!roomId) {
+      return jsonError("Room ID required", 400);
+    }
+
     try {
-        const session: string = ctx.state.session ?? throw new Error("Session not found");
-        const room: string = url.searchParams.get("room") ?? throw new Error("Room not found");
-      const key = getJWT(ctx.req);
-      if (!key) throw new Error("Invalid credentials");
+      // Extract authentication data from middleware state
+      const { jwt, sessionId } = extractAuthData(ctx);
 
-      if (!(await validSession(ctx.req, session))) throw new Error("Invalid or expired session");
-      // Does room exists
-      if (!(await roomExists(ctx.req))) throw new Error("Room not exists");
-      // has enough space to join
-      const count = await roomPlayerCount(ctx.req);
-      if (count >= 5) throw new Error("Room is full");
+      // Validate session
+      await validateSession(jwt, sessionId);
 
-      await signUp(ctx.req);
+      // Validate room
+      await validateRoom(jwt, roomId);
 
-      // if success
-      const headers = new Headers({ "Content-Type": "application/json" });
-      appendCookie(headers, "room", encodeURIComponent(room));
-      return new Response(JSON.stringify({ ok: true, redirect: `/api/join?room=${encodeURIComponent(room)}`}), {
-        status: 200,
-        headers,
-      });
-    } catch (err) {
-      console.error("Signup failed", err);
-      return jsonError(err instanceof Error ? err.message : String(err), 400);
+      // Add user to room
+      await addUserToRoom(jwt, sessionId, roomId);
+
+      // Success - set room cookie and return join URL
+      return createSignupResponse(roomId);
+
+    } catch (error) {
+      console.error("Signup failed:", error);
+      const message = error instanceof Error ? error.message : "Signup failed";
+      return jsonError(message, 400);
     }
   },
 });
-const appendCookie = (headers: Headers, key: string, value: string) => headers.append(
-    "Set-Cookie",
-    `${key}=${value}; HttpOnly; Secure; Path=/; SameSite=Lax`);
 
-async function validSession(req: Request, session: string): Promise<boolean> {
-  const { data, error } = await database(req)
-    .from("sessions")
-    .select("expires_at")
-    .eq("id", session)
-    .single();
+// ============================================================================
+// Response Helpers
+// ============================================================================
 
-  if (error || !data) return false;
-  return new Date(data.expires_at) > new Date();
+function createSignupResponse(roomId: string): Response {
+  const headers = new Headers({ "Content-Type": "application/json" });
+
+  setCookie(headers, "room", roomId);
+
+  const joinUrl = `/api/join?room=${encodeURIComponent(roomId)}`;
+
+  return new Response(
+      JSON.stringify({ ok: true, redirect: joinUrl }),
+      { status: 200, headers }
+  );
 }
 
-function jsonError(message: string, status = 400): Response {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+
+// ============================================================================
+// Authentication
+// ============================================================================
+
+interface AuthData {
+  jwt: string;
+  sessionId: string;
 }
 
-async function signUp(req: Request) {
-  const room = new URL(req.url).searchParams.get("room");
-  if (!room) throw new Error("Invalid room identification");
+function extractAuthData(ctx: Context<Auth>): AuthData {
+  const jwt = ctx.state.jwt;
+  const sessionId = ctx.state.sessionId;
 
-  const session = new URL(req.url).searchParams.get("session");
-  if (!session) throw new Error("Invalid session identification");
-  const { error: signupError } = await database(req)
-    .from("room_membership")
-    .insert({
-      room_id: room,
-      session: session,
-    });
-  if (signupError) throw new Error("Signup failed");
+  if (!jwt) {
+    throw new Error("Authentication required - missing JWT");
+  }
+
+  if (!sessionId) {
+    throw new Error("Authentication required - missing session");
+  }
+
+  return { jwt, sessionId };
 }
-async function roomPlayerCount(req: Request) {
-  const id = new URL(req.url).searchParams.get("room");
-  const { count, error } = await database(req)
-    .from("room_memberships")
-    .select("room_id", { count: "exact", head: true })
-    .eq("room_id", id);
-  if (error) return -1;
-  return count ?? 0;
+
+// ============================================================================
+// Room Validation
+// ============================================================================
+
+async function validateRoom(jwt: string, roomId: string): Promise<void> {
+  console.info("Validating room:", roomId);
+
+  // Check room exists
+  const roomExists = await checkRoomExists(jwt, roomId);
+  if (!roomExists) {
+    throw new Error("Room not found");
+  }
+
+  // Check room has space
+  const playerCount = await getRoomPlayerCount(jwt, roomId);
+
+  if (playerCount >= MAX_ROOM_PLAYERS) {
+    throw new Error(`Room is full (${MAX_ROOM_PLAYERS}/${MAX_ROOM_PLAYERS} players)`);
+  }
+
+  console.info(`Room has space: ${playerCount}/${MAX_ROOM_PLAYERS} players`);
 }
-async function roomExists(req: Request): Promise<boolean> {
-  const id = new URL(req.url).searchParams.get("room");
-  const { data } = await database(req)
-    .from("rooms")
-    .select("id")
-    .eq("id", id)
-    .maybeSingle();
+
+async function checkRoomExists(jwt: string, roomId: string): Promise<boolean> {
+  const { data, error } = await databaseWithKey(jwt)
+      .from("rooms")
+      .select("id")
+      .eq("id", roomId)
+      .maybeSingle();
+
+  if (error) {
+    console.error("Room existence check failed:", error);
+    return false;
+  }
 
   return Boolean(data);
 }
-function getJWT(req: Request): string | null {
-  const auth = req.headers.get("Authorization");
-  if (!auth) return null;
-  return auth.replace(/^Bearer\s+/i, "").trim();
+
+async function getRoomPlayerCount(jwt: string, roomId: string): Promise<number> {
+  const { count, error } = await databaseWithKey(jwt)
+      .from("room_memberships") // Note: Make sure this matches your table name
+      .select("*", { count: "exact", head: true })
+      .eq("room_id", roomId);
+
+  if (error) {
+    console.error("Failed to get player count:", error);
+    throw new Error("Failed to check room capacity");
+  }
+
+  return count ?? 0;
+}
+
+// ============================================================================
+// Room Membership
+// ============================================================================
+
+async function addUserToRoom(
+    jwt: string,
+    sessionId: string,
+    roomId: string
+): Promise<void> {
+  console.info(`Adding session ${sessionId} to room ${roomId}`);
+
+  // Check if already a member
+  const alreadyMember = await checkExistingMembership(jwt, sessionId, roomId);
+
+  if (alreadyMember) {
+    console.info("User already a member of this room");
+    return; // Idempotent - not an error
+  }
+
+  // Insert membership
+  const { error } = await databaseWithKey(jwt)
+      .from("room_memberships")
+      .insert({
+        room_id: roomId,
+        session_id: sessionId,
+        joined_at: new Date().toISOString(),
+      });
+
+  if (error) {
+    // Check if it's a duplicate key error (race condition)
+    if (error.code === "23505") { // PostgresSQL unique violation
+      console.info("Race condition detected - user already joined");
+      return;
+    }
+
+    throw new Error(`Failed to join room: ${error.message}`);
+  }
+
+  console.info("Successfully joined room");
+}
+
+async function checkExistingMembership(
+    jwt: string,
+    sessionId: string,
+    roomId: string
+): Promise<boolean> {
+  const { data } = await databaseWithKey(jwt)
+      .from("room_memberships")
+      .select("room_id")
+      .eq("room_id", roomId)
+      .eq("session_id", sessionId)
+      .maybeSingle();
+
+  return Boolean(data);
 }

@@ -14,47 +14,67 @@ export default function RoomIsland({ data, input }: RoomProps) {
   const room = useSignal(data);
   const count = useSignal<number>(0);
 
-  function getCookie(name: string): string | null {
-    const value = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith(name + "="))
-      ?.split("=")[1];
-
-    return value ? decodeURIComponent(value) : null;
-  }
-
   const handleJoin = async () => {
-      try {
-          const redirected = await handleLogin();
-          const signupResponse = await handleSignup(redirected);
-      }
-  }
-  const handleSignup = async (redirect: string): Promise<Response> => {
-      const res = await fetch(redirect, {
+        try {
+            // Step 1: Login (creates or restores session)
+            const signupUrl = await handleLogin();
+
+            // Step 2: Signup (joins the room)
+            const joinUrl = await handleSignup(signupUrl);
+
+            // Step 3: Join (redirects to room page)
+            globalThis.location.href = joinUrl;
+
+        } catch (error) {
+            console.error("Failed to join room:", error);
+            alert(error instanceof Error ? error.message : "Failed to join room");
+        }
+    }
+
+  const handleSignup = async (redirect: string) => {
+      const res: Response = await fetch(redirect, {
           method: "POST",
           credentials: "same-origin",
-      }).then((res) => res.json().then(data => setUrlState(data.redirect)));
+      });
       if (!res.ok) {
-          // remove room cookie
-          // Get => /
-
+        throw new Error(await res.json().then((res) => res.error));
       }
+      const data = await res.json();
+      setUrlState(data.redirect);
+      return data.redirect;
   }
   const handleLogin = async () => {
       if (!input.value.trim()) {
           alert("Please enter a username!");
           throw new Error("Please enter a username!");
       }
+
       const redirectUrl = encodeURIComponent(`/api/signup?room=${data.id}`);
       const url = constructUrl("/api/login", [`redirect=${redirectUrl}`])
       setUrlState(url);
-      const res = await fetch(url, {
-          method: "POST",
-          body: (): FormData => new FormData().append('username', input.value),
-          credentials: 'include',
-      }).then(() => setUrlState(redirectUrl));
-      if (!res.ok) throw new Error(res.json().then((e) => e.error));
-      return res.json().then(b => b.redirect);
+
+      const formData = new FormData();
+      formData.append("username", input.value);
+      try {
+          const res = await fetch(url, {
+              method: "POST",
+              body: formData,
+              credentials: 'include',
+          });
+
+          const responseData = await res.json();
+
+          if (!res.ok) {
+              throw new Error(responseData.error || 'Login failed');
+          }
+
+          setUrlState(responseData.redirect);
+          return responseData.redirect;
+      }
+      catch (error) {
+          console.error('Login error: ', error);
+          throw error
+      }
   }
   return (
     <div class="card">
@@ -75,11 +95,6 @@ export default function RoomIsland({ data, input }: RoomProps) {
 function setUrlState(redirect: string):void {
     globalThis.history.replaceState({}, "", redirect);
 }
-async function setLocation(res: Response):Promise<void> {
-    const { redirect } = await res.json();
-    if(!redirect) throw new Error("Cant redirect to an invalid location!.");
-    globalThis.location.href = redirect;
-}
+
 const constructUrl = (base: string, params: string[] = []) =>
     params.length ? `${base}?${params.join('&')}` : base;
-

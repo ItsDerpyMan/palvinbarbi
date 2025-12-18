@@ -8,4 +8,13 @@ export interface Auth {
     sessionId?: string;
     roomId?: string;
 }
+export interface AuthResult {
+    success: true;
+    data: { jwt: string; sessionId: string };
+}
+
+export interface AuthError {
+    success: false;
+    error: string;
+}
 export const define = createDefine<Auth>();

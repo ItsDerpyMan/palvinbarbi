@@ -1,227 +1,290 @@
-import {Auth, define} from "../utils/utils.ts";
 import { databaseWithKey } from "../utils/database/database.ts";
 import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
-import Http = Deno.errors.Http;
+import { setCookie, deleteAuthCookies} from "./utils/cookies.ts";
+import { jsonError} from "./utils/helpers.ts";
+import {Auth, define} from "../utils/utils.ts";
+import { Context } from "fresh";
 /**
- * /api/login?session={id}
- * /api/login?session={id}&redirect=/api/join?room={id}
- * /api/login?session={id}&redirect=/api/signup?room={id}
+ * /api/login
+ * /api/login?redirect=/api/join?room={id}
+ * /api/login?redirect=/api/signup?room={id}
  */
 export const handleLogin = define.handlers({
   async POST(ctx) {
+    const url = new URL(ctx.req.url);
+    const redirect = url.searchParams.get("redirect");
+
     console.info(`POST: ${url} - Redirected to: ${redirect}`)
+
+    if (!redirect) {
+      return jsonError("Redirect not found", 400);
+    }
     try {
-      const url = new URL(ctx.req.url);
-      const redirect = url.searchParams.get("redirect");
-      if (!redirect) throw new Error("Redirect not found");
+      // Try to restore existing session from cookies (set by middleware)
+      const restoredSession = await tryRestoreSession(ctx);
 
-      // try restore the session
-      const { jwt: restored_key, session: session_id } =
-        await (tryRestoreSession(ctx)) ?? {}; // TODO have workaround on this return value deconstruction
-      if (!restored_key) {
-          // registering new user
-          console.info( "No Authorization key (JWT)");
-          const username = await getUserFormdata(ctx.req) ?? "Guest";
-
-        const { user_id, jwt, refreshToken } = await signInAnonymously(
-          username,
-        );
-        const { id: new_session_id } = await createSession(
-          jwt,
-          user_id,
-          refreshToken,
-        );
-        // storing the neccessary identification on the client.
-        console.info("Storing metadata in the cookies.");
-        const headers = new Headers({ "Content-Type": "application/json" });
-          appendCookie(headers, "jwt", jwt);
-          appendCookie(headers, "session", new_session_id);
-          appendCookie(headers, "user", user_id);
-          appendCookie(headers, "username", username);
-
-        // redirecting for example:
-        // /api/login?session={id}&redirect=/api/join?room={id}
-        // /api/login?session={id}&redirect=/api/signup?room={id}
-        return new Response(JSON.stringify({ ok: true, redirect: redirect }), { headers });
+      if (restoredSession) {
+        console.info("Session restored successfully");
+        return createLoginResponse(redirect, restoredSession);
       }
-      console.info("Restored session");
+
+      console.info( "Creating anonymous user session");
+      const username = await extractUsername(ctx.req);
+      const newSession = await createAnonymousSession(username);
+
+      // Clear old cookies and set new ones
       const headers = new Headers({ "Content-Type": "application/json" });
-        appendCookie(headers, "jwt", restored_key);
-        appendCookie(headers, "session", session_id);
-      return new Response(JSON.stringify({ ok: true , redirect: redirect}), { headers });
-    } catch (e) {
-      console.error("Login error:", e);
-      return new Response(JSON.stringify({ error: "Login failed" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      deleteAuthCookies(headers);
+
+      setCookie(headers, "jwt", newSession.jwt);
+      setCookie(headers, "session", newSession.sessionId);
+      setCookie(headers, "user", newSession.userId!);
+      setCookie(headers, "username", newSession.username!);
+
+      return new Response(
+          JSON.stringify({ ok: true, redirect }),
+          { status: 200, headers }
+      );
+    } catch (error) {
+      console.error("Login error:", error);
+      const message = error instanceof Error ? error.message : "Login failed";
+      return jsonError(message, 500);
     }
   },
 });
 
+// ============================================================================
+// Response Helpers
+// ============================================================================
 
-const appendCookie = (headers: Headers, key: string, value: string) => headers.append(
-        "Set-Cookie",
-        `${key}=${value}; HttpOnly; Secure; Path=/; SameSite=Lax`);
-
-async function getUserFormdata(req: Request): Promise<string> {
-  const form = await req.formData();
-  const username = form.get("username")?.toString()?.trim();
-  console.info("Getting userdata from the request.\n- Username: ", username);
-  if (!username) {
-    throw new Error("Username required!");
-  }
-  return username;
-}
-export async function createSession(
-  jwt: string,
-  userId: string,
-  refreshToken: string,
-): Promise<Tables<"sessions">> {
-  console.info("Creating a new session with the necessary userdata.");
-  if (!jwt) {
-    throw new Error("No jwt key is available for session creation.");
-  }
-  const { data, error } = await databaseWithKey(jwt)
-    .from("sessions")
-    .insert(
-      {
-        user_id: userId,
-        token: refreshToken,
-        expires_at: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
-      } satisfies TablesInsert<"sessions">,
-    )
-    .select("*")
-    .single<Tables<"sessions">>();
-
-  if (error) throw new Error("Session creation failed: " + error.message);
-  return data;
-}
-
-async function signInAnonymously(username: string): Promise<{
-  user_id: string;
+interface SessionData {
   jwt: string;
-  refreshToken: string;
-}> {
-  console.info("Signing in anonymously, only with a username. (temporary session)");
-  const { data, error } = await databaseWithKey().auth
-    .signInAnonymously();
+  sessionId: string;
+  userId?: string;
+  username?: string;
+}
+function createLoginResponse(redirect: string, session: SessionData): Response {
+  const headers = new Headers({ "Content-Type": "application/json" });
 
-  if (error || !data?.user || !data?.session) {
-    throw new Error(
-      "Anonymous sign-in failed: " + (error?.message ?? "unknown"),
-    );
+  setCookie(headers, "jwt", session.jwt);
+  setCookie(headers, "session", session.sessionId);
+
+  if (session.userId) {
+    setCookie(headers, "user", session.userId);
+  }
+  if (session.username) {
+    setCookie(headers, "username", session.username);
   }
 
-  // Destructure user and session
-  const { user, session } = data;
-  const { id: user_id } = user;
-  const { access_token: jwt, refresh_token: refreshToken } = session;
-
-  // Ensure user exists in the database
-  await databaseWithKey(jwt)
-    .from("users")
-    .upsert(
-      {
-        id: user_id,
-        username: username,
-      } satisfies TablesInsert<"users">,
-    );
-
-  return {
-    user_id,
-    jwt,
-    refreshToken,
-  };
+  return new Response(
+      JSON.stringify({ ok: true, redirect }),
+      { status: 200, headers }
+  );
 }
-function getHeader(req: Request): string {
-  const extract = (name: string): string => {
-    const val = req.headers.get(name)?.trim();
-    if (!val) throw `${name} header is empty`;
-    return val.replace(/^Bearer\s+/i, "");
-  };
-  return extract("Authorization");
-}
-async function tryRestoreSession(
-  ctx: Context<Auth>,
-): Promise<{ jwt: string; session: string } | null> {
-  console.info("Trying to restore user session.");
+
+
+// ============================================================================
+// User Input Extraction
+// ============================================================================
+
+async function extractUsername(req: Request): Promise<string> {
   try {
-    // Getting the JWT key and session ID from the header
-    const key = ctx.state.jwt ?? throw "Authentication key is missing";
-    const session_id = ctx.state.session ?? throw "Session id is missing";
-    // Fetch the session data to check for expiration
-    const {data: sessionData, error: sessionError} = await databaseWithKey(key)
+    const form = await req.formData();
+    const username = form.get("username")?.toString()?.trim();
+
+    console.info("Extracted username: ", username);
+
+    if (!username) {
+      throw new Error("Username is required!");
+    }
+
+    // Basic validation
+    if (username.length < 2 || username.length > 20) {
+      throw new Error("Username has to be between 2 and 20 chars!");
+    }
+
+    return username;
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("Failed to extract username from form data");
+  }
+}
+
+// ============================================================================
+// Session Restoration
+// ============================================================================
+
+async function tryRestoreSession(
+    ctx: Context<Auth>,
+): Promise<SessionData | null> {
+  console.info("Trying to restore user session.");
+
+  try {
+    // Get credentials from middleware state
+    const jwt = ctx.state.jwt;
+    const sessionId = ctx.state.sessionId;
+
+    if (!jwt || !sessionId) {
+      console.info("No JWT key or session id is in state");
+      return null;
+    }
+
+    // Validate session hasn't expired
+    const isValid = await validateSessionExpiry(jwt, sessionId);
+    if (!isValid) {
+      console.info("Session has expired");
+      return null;
+    }
+
+    // Verify JWT is still valid
+    const { error } = await databaseWithKey(jwt).auth.getUser(jwt);
+
+    if (error) {
+      console.info("JWT invalid, attempting refresh");
+      const refreshedJwt = await refreshSessionJwt(sessionId);
+
+      if (!refreshedJwt) {
+        return null;
+      }
+
+      return { jwt: refreshedJwt, sessionId };
+    }
+
+    // Session is valid
+    return { jwt, sessionId };
+
+  } catch (error) {
+    console.error("Session restoration failed:", error);
+    return null;
+  }
+}
+async function validateSessionExpiry(
+    jwt: string,
+    sessionId: string
+): Promise<boolean> {
+  const { data, error } = await databaseWithKey(jwt)
+      .from("sessions")
+      .select("expires_at")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+  if (error || !data) {
+    return false;
+  }
+
+  return new Date(data.expires_at) > new Date();
+}
+
+async function refreshSessionJwt(sessionId: string): Promise<string | null> {
+  console.info("Refreshing JWT for session:", sessionId);
+
+  try {
+    // Fetch refresh token
+    const { data: sessionData, error: fetchError } = await databaseWithKey()
         .from("sessions")
-        .select("id, expires_at")
-        .eq("id", session_id)
+        .select("token")
+        .eq("id", sessionId)
         .single();
 
-    if (sessionError || !sessionData) {
-      throw new Error("Session not found or error fetching session data.");
+    if (fetchError || !sessionData) {
+      throw new Error("Session not found");
     }
 
-    // Check if session is expired
-    if (new Date(sessionData.expires_at) < new Date()) {
-      throw new Error(`Session ${session_id} has expired.`);
+    // Refresh the session
+    const { data: refreshed, error: refreshError } = await databaseWithKey()
+        .auth
+        .refreshSession({ refresh_token: sessionData.token });
+
+    if (refreshError || !refreshed?.session) {
+      throw new Error("Failed to refresh session");
     }
 
-    // Try to get user data using the JWT
-    const {error: userError} = await databaseWithKey(key).auth.getUser(key);
-    if (userError) {
-      console.info("Failed to retrieve user data from JWT.");
-      const restored_key = await restoreJWT(session_id);
-      if (!restored_key) return null;
-      return {jwt: restored_key, session: session_id};
-    }
-    return {jwt: key, session: session_id};
-  } catch (e) {
-    if( typeof e !== "string") console.error(e);
-    console.info(e);
+    // Update stored refresh token
+    await databaseWithKey(refreshed.session.access_token)
+        .from("sessions")
+        .update({ token: refreshed.session.refresh_token })
+        .eq("id", sessionId);
+
+    return refreshed.session.access_token;
+
+  } catch (error) {
+    console.error("JWT refresh failed:", error);
     return null;
   }
 }
 
-async function restoreJWT(id: string): Promise<string> {
-  console.info("Restores the session authentication (JWT) key.");
-  // Query refresh token from sessions table
-  const { data: sessionData, error } = await databaseWithKey()
-    .from("sessions")
-    .select("token")
-    .eq("id", id)
-    .single();
+// ============================================================================
+// Anonymous Session Creation
+// ============================================================================
+
+async function createAnonymousSession(
+    username: string
+): Promise<SessionData> {
+  console.info("Creating anonymous session for:", username);
+
+  // Sign in anonymously
+  const { data, error } = await databaseWithKey().auth.signInAnonymously();
+
+  if (error || !data?.user || !data?.session) {
+    throw new Error(`Anonymous sign-in failed: ${error?.message ?? "Unknown error"}`);
+  }
+
+  const { user, session } = data;
+  const userId = user.id;
+  const jwt = session.access_token;
+  const refreshToken = session.refresh_token;
+
+  // Store user in database
+  await storeUser(jwt, userId, username);
+
+  // Create session record
+  const sessionRecord = await storeSession(jwt, userId, refreshToken);
+
+  return {
+    jwt,
+    sessionId: sessionRecord.id,
+    userId,
+    username,
+  };
+}
+
+async function storeUser(
+    jwt: string,
+    userId: string,
+    username: string
+): Promise<void> {
+  const { error } = await databaseWithKey(jwt)
+      .from("users")
+      .upsert({
+        id: userId,
+        username: username,
+      } satisfies TablesInsert<"users">);
 
   if (error) {
-    throw new Error(
-      `Failed to fetch session ${id}: ${error.message}`,
-    );
+    throw new Error(`Failed to store user: ${error.message}`);
   }
-  if (!sessionData) {
-    throw new Error(`No session found for id: ${id}`);
+}
+
+async function storeSession(
+    jwt: string,
+    userId: string,
+    refreshToken: string
+): Promise<Tables<"sessions">> {
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+
+  const { data, error } = await databaseWithKey(jwt)
+      .from("sessions")
+      .insert({
+        user_id: userId,
+        token: refreshToken,
+        expires_at: expiresAt.toISOString(),
+      } satisfies TablesInsert<"sessions">)
+      .select("*")
+      .single<Tables<"sessions">>();
+
+  if (error || !data) {
+    throw new Error(`Session creation failed: ${error?.message ?? "Unknown error"}`);
   }
 
-  // Refresh the JWT using Supabase auth
-  const { data: refreshedSession, error: tokenError } = await databaseWithKey()
-    .auth
-    .refreshSession({ refresh_token: sessionData.token });
-
-  if (tokenError) {
-    throw new Error(
-      `Failed to refresh JWT for session ${id}: ${tokenError.message}`,
-    );
-  }
-  if (!refreshedSession?.session) {
-    throw new Error(
-      `No session returned when refreshing JWT for session ${id}`,
-    );
-  }
-
-  // Update the refresh token in the database
-  await databaseWithKey(refreshedSession.session.access_token)
-    .from("sessions")
-    .update({ token: refreshedSession.session.refresh_token })
-    .eq("id", id);
-
-  // Return the new access token
-  return refreshedSession.session.access_token ?? "";
+  return data;
 }
