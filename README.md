@@ -5,4 +5,4 @@ This project is an **in-development fullstack web application** for a multiplaye
 The goal of this project is to provide a seamless, engaging, and scalable multiplayer experience — blending real-time gameplay mechanics with secure, user-friendly web technology. It will feature player matchmaking, live question rounds, score tracking, and interactive chat capabilities once fully developed.
 
 At the current stage of development, the focus is on building the **authentication backend**. This includes setting up the user model, registration and login endpoints, token-based authentication (JWT or session-based), and secure password management. The foundation laid here will support role-based access control and persistent user data for future gameplay and social features.
-# bohóc vagy
+# xd bohóc vagy
