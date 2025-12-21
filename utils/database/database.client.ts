@@ -1,19 +1,24 @@
-// utils/getDatabase.ts
-import type { Database } from "./database.types.ts";
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types.ts";
 
-export async function getAnonDatabase(jwt?: string) {
-  const res = await fetch("/api/public-keys");
-  const data = await res.json();
-  return createClient<Database>(
-    data.url,
-    data.key,
-    jwt
-      ? {
-        global: {
-          headers: { Authorization: `Bearer ${jwt}` },
-        },
-      }
-      : undefined,
-  );
+interface SupabaseConfig {
+    url: string;
+    key: string;
+}
+
+declare global {
+    // For browser (window)
+    interface Window {
+        __SUPABASE__: SupabaseConfig;
+    }
+    // For globalThis (Deno/Node/universal)
+    var __SUPABASE__: SupabaseConfig;
+}
+
+export function database(jwt?: string) {
+    const { url, key } = globalThis.__SUPABASE__;
+
+    return createClient<Database>(url, key, jwt ? {
+        global: { headers: { Authorization: `Bearer ${jwt}` } }
+    } : undefined);
 }

@@ -1,5 +1,4 @@
 import { App, Context, staticFiles } from "fresh";
-import { game_app } from "./app_game/main.tsx";
 import type { Auth } from "./utils/utils.ts";
 
 export const app = new App<Auth>().use(staticFiles());
@@ -28,6 +27,12 @@ app.get(
       const handler = await import("./handlers/rooms.ts");
       return handler.handleRooms.GET;
     }
+);
+app.post("/api/room/:id",
+    async () => {
+        const handler = await import("./handlers/room.ts");
+        return handler.handleRoom.POST;
+    },
 );
 
 app.get(
@@ -72,5 +77,10 @@ app.post("/api/public-keys", async () => {
   return handler.getPublicKeys.POST();
 });
 
-app.mountApp("/room/", game_app);
+// WebSocket route for room updates
+app.get("/ws/room/:id", async () => {
+  const handler = await import("./handlers/ws/room.ts");
+  return handler.handleRoomWS.GET;
+});
+
 app.fsRoutes();

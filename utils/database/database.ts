@@ -2,15 +2,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { Tables } from "./database.types.ts";
 
-export function database(req: Request) {
+export function database() {
   return createClient(
     Deno.env.get("PUBLIC_SUPABASE_URL") ?? "",
     Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") ?? "",
-    {
-      global: {
-        headers: { Authorization: req.headers.get("Authorization")! },
-      },
-    },
   );
 }
 export function databaseWithKey(key?: string | null) {
