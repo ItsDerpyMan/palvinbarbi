@@ -215,14 +215,14 @@ export default function RoomIsland({ roomId }: RoomIslandProps) {
     }
 
     return (
-        <div class="card bg-[url(/images/bg-paper.jpg)] bg-cover" data-room-id={roomId}>
-            <div class="flex justify-between items-center mb-4">
+        <div class="card bg-[url(/images/bg-paper.jpg)] bg-cover mr-auto ml-auto text-black" data-room-id={roomId}>
+            <div class="flex justify-between items-center mb-4 room">
                 <h2 class="text-lg font-semibold truncate">{room.value.name}</h2>
                 <span class="text-sm text-gray-500 font-mono">{room.value.id.slice(0, 8)}</span>
             </div>
 
-            <div class="flex justify-between items-center">
-                <Button onClick={handleJoin} disabled={joining.value}>
+            <div class="flex justify-between items-center inner">
+                <Button onClick={handleJoin} disabled={joining.value} class="btn btn-outline btn-primary">
                     {joining.value ? "Joining..." : "Join"}
                 </Button>
                 <TimeStamp time={Date.parse(room.value.created_at)} />

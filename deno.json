@@ -13,6 +13,7 @@
     "@fresh/examples": "jsr:@fresh/examples@^1.0.1",
     "@std/http/cookie": "jsr:@std/http@^1.0.22/cookie",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.86.0",
+    "daisyui": "npm:daisyui@^5.5.14",
     "fresh": "jsr:@fresh/core@^2.2.0",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@1.0.4",
     "preact": "npm:preact@^10.27.2",
