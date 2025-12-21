@@ -46,16 +46,20 @@
     "npm:@supabase/storage-js@2.86.0": "2.86.0",
     "npm:@tailwindcss/vite@^4.1.17": "4.1.17_vite@7.2.6__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
     "npm:@types/node@*": "24.2.0",
+    "npm:daisyui@^5.5.14": "5.5.14",
     "npm:esbuild-wasm@~0.25.11": "0.25.12",
     "npm:esbuild@0.25.7": "0.25.7",
     "npm:esbuild@~0.25.5": "0.25.7",
     "npm:preact-render-to-string@^6.6.3": "6.6.3_preact@10.28.0",
+    "npm:preact@^10.22.0": "10.28.0",
     "npm:preact@^10.27.0": "10.28.0",
     "npm:preact@^10.27.2": "10.28.0",
     "npm:process@~0.11.10": "0.11.10",
+    "npm:rollup@^4.50.0": "4.53.3",
     "npm:tailwindcss@^4.1.17": "4.1.17",
     "npm:timeago.js@^4.0.2": "4.0.2",
     "npm:vite@7.2.6": "7.2.6_@types+node@24.2.0_picomatch@4.0.3",
+    "npm:vite@^7.1.4": "7.2.6_@types+node@24.2.0_picomatch@4.0.3",
     "npm:vite@^7.2.6": "7.2.6_@types+node@24.2.0_picomatch@4.0.3"
   },
   "jsr": {
@@ -104,7 +108,9 @@
       "integrity": "df5f3521ba02639ba4d3b5a4d57ab9e9048dd4f3752e71739161b1d501fae247",
       "dependencies": [
         "jsr:@fresh/core@^2.0.0-alpha.18",
-        "npm:@preact/signals@^1.2.3"
+        "npm:@preact/signals@^1.2.3",
+        "npm:preact@^10.22.0",
+        "npm:preact@^10.27.2"
       ]
     },
     "@fresh/plugin-vite@1.0.4": {
@@ -119,7 +125,9 @@
         "npm:@babel/core",
         "npm:@babel/preset-react",
         "npm:@mjackson/node-fetch-server",
-        "npm:@prefresh/vite"
+        "npm:@prefresh/vite",
+        "npm:rollup",
+        "npm:vite@^7.1.4"
       ]
     },
     "@std/bytes@1.0.6": {
@@ -860,6 +868,9 @@
     "convert-source-map@2.0.0": {
       "integrity": "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="
     },
+    "daisyui@5.5.14": {
+      "integrity": "sha512-L47rvw7I7hK68TA97VB8Ee0woHew+/ohR6Lx6Ah/krfISOqcG4My7poNpX5Mo5/ytMxiR40fEaz6njzDi7cuSg=="
+    },
     "debug@4.4.3": {
       "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
       "dependencies": [
@@ -1190,6 +1201,7 @@
       "jsr:@supabase/supabase-js@^2.86.0",
       "npm:@preact/signals@^2.5.0",
       "npm:@tailwindcss/vite@^4.1.17",
+      "npm:daisyui@^5.5.14",
       "npm:preact@^10.27.2",
       "npm:process@~0.11.10",
       "npm:tailwindcss@^4.1.17",

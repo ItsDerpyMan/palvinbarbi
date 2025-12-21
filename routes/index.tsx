@@ -20,8 +20,8 @@ export default define.page(function HomePage(props) {
     const rooms = data?.rooms ?? [];
 
     return (
-        <main class="px-4 py-8 mx-auto fresh-gradient min-h-screen">
-            <h1 class="text-4xl font-bold mb-6 text-center">Would You Rather</h1>
+        <main class="px-4 py-8 mx-auto fresh-gradient min-h-screen bg-[url(/images/bg-plavin.jpg)] bg-cover">
+            <h1> <span id="would">Would</span> You <span id="rather">Rather</span></h1>
 
             <section class="max-w-screen-md mx-auto">
                 {/* Username input - plain HTML, queried by islands */}
@@ -34,7 +34,7 @@ export default define.page(function HomePage(props) {
                 </div>
 
                 {/* Room list */}
-                <h2 class="text-2xl font-semibold mb-4">Available Rooms</h2>
+                <h2 class="w-fit mb-3 text-2xl mr-auto ml-auto">Available Rooms</h2>
 
                 {rooms.length === 0 ? (
                     <div class="text-center py-8 bg-gray-50 rounded-lg">
@@ -42,7 +42,7 @@ export default define.page(function HomePage(props) {
                         <p class="text-sm text-gray-500 mt-1">Check back later!</p>
                     </div>
                 ) : (
-                    <div id="room-container" class="space-y-4">
+                    <div id="room-container" class="space-y-8 room-container">
                         {rooms.map((room) => (
                             <Partial name={`room-${room.id}`} key={room.id}>
                                 <RoomIsland roomId={room.id} />

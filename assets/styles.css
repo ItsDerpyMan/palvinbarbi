@@ -1,47 +1,80 @@
 @import "tailwindcss";
+@plugin "daisyui";
 @tailwind components;
 @tailwind base;
 @tailwind utilities;
 
 .fresh-gradient {
-  background-color: rgb(134, 239, 172);
-  background-image: linear-gradient(
-    to right bottom,
-    rgb(219, 234, 254),
-    rgb(187, 247, 208),
-    rgb(254, 249, 195)
-  );
+
 }
-@layer components {
-  .join-button {
-    @apply px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold
-      hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400
-      transition-colors duration-200;
+
+.card{
+  @apply space-y-8 rounded-xl ;
+  width: 60%;
+  position: relative;
+  height: 9rem;
+
+}
+
+.inner{
+  padding-left: .5rem;
+  padding-right: .5rem;
+
+  position: absolute;
+  bottom: 0.4rem;
+  width: 100%;
+}
+h1{
+  width: fit-content;
+  margin-bottom: 1.5rem;
+  font-size: 4rem;
+  @apply mr-auto ml-auto;
+}
+
+#would{
+  display:inline-flex;
+  color: red;
+  animation-name: would;
+  animation-iteration-count: infinite;
+  animation-duration: 1s;
+  animation-timing-function: linear;
+  animation-direction: alternate;
+}
+@keyframes would {
+  from{color: red;
+      transform: scale(1.2);
   }
-  .dark .join-button {
-    @apply bg-blue-800 text-gray-100 hover:bg-blue-900 focus:ring-blue-600;
-  }
-  .timestamp {
-    @apply items-center self-start bg-gray-50 rounded;
-  }
-  .player-count {
-    @apply inline-flex items-center px-3 py-1 rounded-full border
-      border-gray-400 bg-white text-sm font-medium text-gray-700;
-  }
-  .dark .player-count {
-    @apply text-gray-300;
-  }
-  .dark .timestamp {
-    @apply text-gray-400;
-  }
-  .card {
-    @apply w-full max-w-md bg-white rounded-xl shadow-md p-4 flex flex-col
-      space-y-2;
-  }
-  .card:hover {
-    @apply shadow-lg scale-105 transition-shadow duration-300;
-  }
-  .dark .card {
-    @apply bg-gray-800 shadow-gray-900;
+  to{color: blue;
+    transform: scale(1);
   }
 }
+
+#rather{
+  display:inline-flex;
+  color: blue;
+  animation-name: rather;
+  animation-iteration-count: infinite;
+  animation-duration: 1s;
+  animation-timing-function: linear;
+  animation-direction: alternate;
+}
+@keyframes rather{
+  from{color: blue;
+    transform: scale(1);
+  }
+  to{color: red;
+    transform: scale(1.2);
+  }
+
+}
+.room{
+  padding-left: .5rem;
+  padding-right: .5rem;
+  padding-top: .7rem;
+}
+
+/*
+*{
+  border:1px solid violet;
+}
+*/
