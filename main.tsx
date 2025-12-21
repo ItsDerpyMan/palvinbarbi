@@ -35,14 +35,6 @@ app.post("/api/room/:id",
     },
 );
 
-app.get(
-    "/api/join",
-    async () => {
-      const handler = await import("./handlers/join.ts");
-      return handler.handleJoin.GET;
-    },
-);
-
 app.post(
   "/api/login",
   async () => {
@@ -75,12 +67,6 @@ app.post("/api/public-keys", async () => {
   console.log("POST /api/public-keys");
   const handler = await import("./handlers/publicKeys.ts");
   return handler.getPublicKeys.POST();
-});
-
-// WebSocket route for room updates
-app.get("/ws/room/:id", async () => {
-  const handler = await import("./handlers/ws/room.ts");
-  return handler.handleRoomWS.GET;
 });
 
 app.fsRoutes();

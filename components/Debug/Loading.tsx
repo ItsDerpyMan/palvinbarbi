@@ -1,4 +1,4 @@
-import { Auth } from "../utils/auth.ts";
+import { Auth } from "../../utils/auth.ts";
 
 export enum InvalidProps {
   Loading,

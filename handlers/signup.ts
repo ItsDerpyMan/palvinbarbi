@@ -55,7 +55,7 @@ function createSignupResponse(roomId: string): Response {
 
   setCookie(headers, "room", roomId);
 
-  const joinUrl = `/api/join?room=${encodeURIComponent(roomId)}`;
+  const joinUrl = `/room/${roomId}`;
 
   return new Response(
       JSON.stringify({ ok: true, redirect: joinUrl }),

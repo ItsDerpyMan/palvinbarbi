@@ -1,5 +1,5 @@
 import { Context } from "fresh";
-import { Auth } from "../utils/auth.ts";
+import { Auth } from "../../utils/auth.ts";
 
 // components/DebugContext.tsx   ← this file makes Tailwind work!
 export default function DebugContext({ data }: { data: Auth }) {

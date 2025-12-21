@@ -1,8 +1,8 @@
 import { useSignal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { Auth } from "../utils/auth.ts";
-import DebugContext from "../components/DebugContext.tsx";
-import Loading from "../components/Loading.tsx";
+import DebugContext from "../components/Debug/DebugContext.tsx";
+import Loading from "../components/Debug/Loading.tsx";
 
 export default function DebugPanel() {
   const [context, setContext] = useState<Auth | null>(null);

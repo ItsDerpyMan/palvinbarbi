@@ -1,17 +1,70 @@
-import { useSignal, Signal } from "@preact/signals";
-import {State} from "../routes/(app)/room/[id].tsx";
+import { useSignal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
+import { database } from "../utils/database/database.client.ts";
+import QuestionBox from "./QuestionBox.tsx";
+
+export enum State {
+    initializing,
+    waiting,
+    playing
+}
 
 interface GameIslandProps {
     roomId: string;
-    status: Signal<State>;
+    userId: string;
+    username: string;
 }
 
-export default function GameIsland({ roomId, status }: GameIslandProps) {
-    // Check for valid connection
-    // on success -> initialze page
+export default function GameIsland({ roomId, userId, username }: GameIslandProps) {
+    const status = useSignal<State>(State.initializing);
+    const leftQuestion = useSignal<string>("Would you rather...");
+    const rightQuestion = useSignal<string>("Or would you...");
 
-    // INIT
-    // 1. track presence
-    // 2.
+    useEffect(() => {
+        const channel = database().channel(`room-${roomId}`);
 
+        channel
+            .subscribe(async (channelStatus) => {
+                if (channelStatus === 'SUBSCRIBED') {
+                    console.log(`[GameIsland] Subscribed to room-${roomId}`);
+
+                    // Track presence
+                    await channel.track({
+                        user_id: userId,
+                        username: username,
+                        online_at: new Date().toISOString(),
+                    });
+
+                    status.value = State.waiting;
+                }
+            });
+
+        return () => {
+            channel.untrack();
+            channel.unsubscribe();
+        };
+    }, [roomId, userId, username]);
+
+    return (
+        <div class="flex flex-col gap-6">
+            <div class="flex gap-4 justify-center items-center">
+                <QuestionBox
+                    position="self-start"
+                    width="300px"
+                    height="200px"
+                    text={leftQuestion}
+                />
+                <QuestionBox
+                    position="self-end"
+                    width="300px"
+                    height="200px"
+                    text={rightQuestion}
+                />
+            </div>
+
+            <div class="text-center text-gray-500">
+                Status: {State[status.value]}
+            </div>
+        </div>
+    );
 }
