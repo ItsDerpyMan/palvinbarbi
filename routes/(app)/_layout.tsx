@@ -8,7 +8,7 @@ export default define.layout((props) => (
         <title>Would you Rather</title>
     </head>
     <body f-client-nav>
-        {props.Component}
+        <props.Component />
     </body>
     </html>
 ));
