@@ -57,7 +57,6 @@ export const handler = define.handlers({
 
 export default define.page<typeof handler>(function RoomPage(props) {
     const data = props.data as { roomId: string; sessionId: string; username: string };
-
     return (
         <>
             <h2 class="text-2xl font-bold mb-4">Room: {data.roomId}</h2>
