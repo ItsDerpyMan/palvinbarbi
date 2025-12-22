@@ -1,7 +1,8 @@
 import { useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 import { database } from "../utils/database/database.client.ts";
-import QuestionBox from "./QuestionBox.tsx";
+import Box from "../components/Box.tsx";
+import Controller from "./QuizController.tsx";
 
 export enum State {
     initializing,
@@ -48,18 +49,10 @@ export default function GameIsland({ roomId, userId, username }: GameIslandProps
     return (
         <div class="flex flex-col gap-6">
             <div class="flex gap-4 justify-center items-center">
-                <QuestionBox
-                    position="self-start"
-                    width="300px"
-                    height="200px"
-                    text={leftQuestion}
-                />
-                <QuestionBox
-                    position="self-end"
-                    width="300px"
-                    height="200px"
-                    text={rightQuestion}
-                />
+                <Controller>
+                    <Box text={leftQuestion} />
+                    <Box text={rightQuestion} />
+                </Controller>
             </div>
 
             <div class="text-center text-gray-500">

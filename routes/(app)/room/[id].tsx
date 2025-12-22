@@ -37,6 +37,7 @@ export const handler = define.handlers({
             }
 
             // Success - return data for page rendering
+
             return {
                 data: {
                     roomId,
@@ -55,13 +56,14 @@ export const handler = define.handlers({
     },
 });
 
-export default define.page<typeof handler>(function RoomPage(props) {
+export default define.page<typeof handler>((props)=> {
+    console.log("Running")
     const data = props.data as { roomId: string; sessionId: string; username: string };
-
     return (
         <>
             <h2 class="text-2xl font-bold mb-4">Room: {data.roomId}</h2>
-            <p class="text-gray-600 mb-2">Welcome, {data.username}!</p>
+            <p class="text-white-600 mb-2">Welcome, {data.username}!</p>
+            <p class="text-white-600 mb-2">Session: {data.sessionId}</p>
 
             <main class="mt-8">
                 <GameIsland
