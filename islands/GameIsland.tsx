@@ -18,9 +18,6 @@ interface GameIslandProps {
 
 export default function GameIsland({ roomId, userId, username }: GameIslandProps) {
     const status = useSignal<State>(State.initializing);
-    const leftQuestion = useSignal<string>("Would you rather...");
-    const rightQuestion = useSignal<string>("Or would you...");
-
     useEffect(() => {
         const channel = database().channel(`room-${roomId}`);
 

@@ -1,4 +1,5 @@
 import { ComponentChildren, toChildArray } from "preact";
+import { useSignal } from "preact/hooks";
 
 interface ControllerProps {
     children?: ComponentChildren
@@ -6,10 +7,11 @@ interface ControllerProps {
 export default function Controller({ children }: ControllerProps) {
     const [ box1, box2 ] = toChildArray(children);
 
+    //
     return (
         <div>
-            <div>{box1}</div>
-            <div>{box2}</div>
+            {box1}
+            {box2}
         </div>
     )
 }
