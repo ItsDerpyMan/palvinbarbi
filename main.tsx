@@ -4,6 +4,7 @@ import type { Auth } from "./utils/utils.ts";
 export const app = new App<Auth>().use(staticFiles());
 
 app.use(async (ctx) => {
+    console.log("ws: ", ctx.req.headers.get("upgrade"))
   const cookie = ctx.req.headers.get("Cookie") ?? "";
 
   const jwt = cookie.match(/jwt=([^;]+)/)?.[1] ?? null;
@@ -68,5 +69,12 @@ app.post("/api/public-keys", async () => {
   const handler = await import("./handlers/publicKeys.ts");
   return handler.getPublicKeys.POST();
 });
+
+// WebSocket route - now using file-based route at routes/ws.ts
+// app.get("/ws", async (ctx) => {
+//   const handler = await import("./handlers/sockets/ws.ts");
+//   console.log("GETETETET")
+//   return handler.handleWebSocket.GET(ctx);
+// });
 
 app.fsRoutes();
