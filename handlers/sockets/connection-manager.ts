@@ -3,8 +3,8 @@ import { eventBus } from "./event-bus.ts";
 
 interface Metadata {
     socket: WebSocket;
-    playerId: string | null;
-    roomId: string | null;
+    playerId?: string;
+    roomId?: string;
     connectedAt: number;
     lastPing: number;
 }

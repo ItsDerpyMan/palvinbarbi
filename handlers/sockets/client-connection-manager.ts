@@ -17,10 +17,13 @@ class ClientConnectionManager {
     connect(config: ConnectionConfig) {
         this.config = config;
         console.log("[ClientWS] Attempting to connect to:", config.url);
+        console.log("[ClientWS] Config:", { roomId: config.roomId, playerId: config.playerId, username: config.username });
+
         this.socket = new WebSocket(config.url);
 
         this.socket.onopen = () => {
-            console.log("[ClientWS] Connected successfully!");
+            console.log("[ClientWS] ✅ Connected successfully!");
+            console.log("[ClientWS] ReadyState:", this.socket!.readyState);
             this.reconnectAttempts = 0;
 
             this.socket!.send(JSON.stringify({
@@ -37,12 +40,13 @@ class ClientConnectionManager {
         };
 
         this.socket.onmessage = (e) => {
+            console.log("[ClientWS] Message received:", e.data);
             const msg = JSON.parse(e.data);
             clientEventBus.publish(msg.type, msg.payload);
         };
 
-        this.socket.onclose = () => {
-            console.log("[ClientWS] Disconnected");
+        this.socket.onclose = (e) => {
+            console.log("[ClientWS] ❌ Disconnected - Code:", e.code, "Reason:", e.reason, "Clean:", e.wasClean);
             clientEventBus.publish("local:disconnected", {});
 
             if (this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -60,7 +64,9 @@ class ClientConnectionManager {
         };
 
         this.socket.onerror = (e) => {
-            console.error("[ClientWS] WebSocket error:", e);
+            console.error("[ClientWS] ⚠️ WebSocket error event fired");
+            console.error("[ClientWS] Error details:", e);
+            console.error("[ClientWS] ReadyState at error:", this.socket?.readyState);
             clientEventBus.publish("local:error", { error: e });
         };
     }
