@@ -3,6 +3,8 @@ import { eventBus } from "./event-bus.ts";
 import { connectionManager } from "./connection-manager.ts";
 import { Player } from "./player.ts";
 import { Room } from "./room.ts";
+import {Phase} from "./scheduler.ts";
+import {database} from "../../utils/database/database.ts";
 
 class RoomManager {
     private rooms = new Map<string, Room>();
@@ -37,16 +39,32 @@ class RoomManager {
         }
     }
 
-    private handleDisconnect({ socketId: _socketId, roomId, playerId }: {
+    private async handleDisconnect({ socketId: _socketId, roomId, playerId }: {
         socketId: string;
         roomId?: string;
         playerId?: string;
     }) {
-        if (roomId) {
+        if (roomId && playerId) {
             const room = this.rooms.get(roomId);
             if (room) {
                 room.removePlayer(playerId!);
 
+                const hasStarted = room.getSchedulePhase() > Phase.countdown
+
+                if (!hasStarted) {
+                    try {
+                       const { data: deletedCount, error } = await database().rpc("delete_room_membership_for_user", {
+                           p_user_id: playerId,
+                           p_room_id: roomId,
+                       });
+
+                        if (error) throw new Error(`Failed to delete room_membership for ${playerId}:`, error);
+                        if (deletedCount <= 0) throw "No room membership found.";
+
+                    } catch (err) {
+                        console.error('Error deleting player room_membership: ', err);
+                    }
+                }
                 // Clean up empty rooms
                 if (room.isEmpty()) {
                     this.rooms.delete(roomId);

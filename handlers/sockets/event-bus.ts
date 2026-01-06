@@ -47,7 +47,7 @@ export interface ClientEventMap {
         round: number;
         duration: number;
         data: {
-            text: string;
+            prompt: string;
             l_index: number;
             r_index: number;
         }
@@ -74,6 +74,11 @@ export interface ClientEventMap {
         round: number;
         answerCount: number;
         totalPlayers: number;
+    };
+    'client:state': {
+        phase: Phase;
+        round: number;
+        playerCount: number;
     };
     "client:cancel": {
         reason: string;

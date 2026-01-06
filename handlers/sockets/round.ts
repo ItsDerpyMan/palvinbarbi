@@ -1,5 +1,7 @@
 // round.ts
 
+import {database} from "../../utils/database/database.ts";
+
 export interface Submission {
     playerId: string;
     pick: boolean;
@@ -17,6 +19,33 @@ export class Round {
         this.id = crypto.randomUUID();
         this.startedAt = Date.now();
         this.endsAt = this.startedAt + duration;
+    }
+    async getRoundData() {
+        const { count} = await database()
+            .from("prompts")
+            .select("*", { count: "exact", head: true })
+
+        if (!count) throw new Error("Couldn't count the table");
+
+        const index = (() => {
+            let seed = 0;
+            for (let i = 0; i < this.id.length; i++) {
+                seed = (seed * 31 + this.id.charCodeAt(i)) >>> 0;
+            }
+            return seed % count;
+        })();
+
+        const { data, error } = await database()
+            .from("prompts")
+            .select("prompt, l_index, r_index")
+            .order('id', { ascending: true })
+            .range(index, index);
+
+        if (error || !data) {
+            throw new Error("Failed to initialize player information:", error);
+        }
+
+        return data;
     }
 
     submitAnswer(playerId: string, pick: boolean): boolean {

@@ -15,7 +15,7 @@ const PlayingView: FunctionComponent<PlayingViewProps> = ({ controller, leftOpti
             {/* Question */}
             <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-xl shadow-lg">
                 <p class="text-2xl font-bold text-center">
-                    {controller.prompt.value?.text}
+                    {controller.prompt.value?.prompt}
                 </p>
             </div>
 
