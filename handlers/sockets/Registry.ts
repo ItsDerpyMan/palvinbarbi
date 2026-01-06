@@ -1,7 +1,7 @@
 interface Metadata {
     socket: WebSocket;
-    playerId: string | null;
-    roomId: string | null;
+    playerId?: string;
+    roomId?: string;
     connectedAt: number;
     lastPing: number;
 }
@@ -16,8 +16,6 @@ export class Registry {
     add(socketId: string, socket: WebSocket) {
         this.bySocketId.set(socketId, {
             socket,
-            playerId: null,
-            roomId: null,
             connectedAt: Date.now(),
             lastPing: Date.now(),
         });

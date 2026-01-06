@@ -1,13 +1,16 @@
-import { useMemo } from "preact/hooks";
+import { useEffect, useMemo } from "preact/hooks";
 import { signal } from "@preact/signals";
 import { State } from "../hooks/QuizController.class.ts";
 import { useQuizController } from "../hooks/useQuizController.ts";
 import InitializingView from "../components/quiz/InitializingView.tsx";
-import WaitingView from "../components/quiz/WaitingView.tsx";
+import LobbyView from "../components/quiz/LobbyView.tsx";
+import CountdownView from "../components/quiz/CountdownView.tsx";
+import IntroView from "../components/quiz/IntroView.tsx";
 import PlayingView from "../components/quiz/PlayingView.tsx";
 import RoundEndView from "../components/quiz/RoundEndView.tsx";
+import RevealView from "../components/quiz/RevealView.tsx";
+import OutroView from "../components/quiz/OutroView.tsx";
 import StatsView from "../components/quiz/StatsView.tsx";
-import {useEffect} from "preact/hooks";
 
 interface ControllerProps {
     roomId: string;
@@ -17,7 +20,6 @@ interface ControllerProps {
 
 export default function Controller({ roomId, playerId, username }: ControllerProps) {
     const controller = useQuizController(roomId, playerId, username);
-
     // Compute options from prompt (only recalculates when prompt changes)
     const leftOption = useMemo(() => {
         if (!controller?.prompt.value) return signal("");
@@ -30,13 +32,16 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
         const { text, r_index } = controller.prompt.value;
         return signal(text.slice(r_index).trim());
     }, [controller?.prompt.value]);
+
+    useEffect(() => {
+        console.log(controller?.state.value)
+    }, [controller?.state.value]);
+
     // Handle null controller (loading state)
     if (!controller) {
         return <InitializingView />;
     }
-    useEffect(() => {
-        console.log("state", controller.state.value);
-    }, [controller.state.value]);
+
     return (
         <div class="quiz-container flex flex-col gap-6 p-6 max-w-4xl mx-auto">
             {/* Header */}
@@ -52,11 +57,19 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
             {/* State Views */}
             {controller.state.value === State.initializing && <InitializingView />}
 
-            {controller.state.value === State.waiting && (
-                <WaitingView controller={controller} />
+            {controller.state.value === State.lobby && (
+                <LobbyView controller={controller} />
             )}
 
-            {controller.state.value === State.playing && controller.prompt.value && (
+            {controller.state.value === State.countdown && (
+                <CountdownView controller={controller} />
+            )}
+
+            {controller.state.value === State.intro && (
+                <IntroView controller={controller} />
+            )}
+
+            {controller.state.value === State.start && controller.prompt.value && (
                 <PlayingView
                     controller={controller}
                     leftOption={leftOption}
@@ -65,6 +78,14 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
             )}
 
             {controller.state.value === State.end && <RoundEndView />}
+
+            {controller.state.value === State.reveal && controller.results.value.length > 0 && (
+                <RevealView controller={controller} />
+            )}
+
+            {controller.state.value === State.outro && (
+                <OutroView controller={controller} />
+            )}
 
             {controller.state.value === State.stats && controller.results.value.length > 0 && (
                 <StatsView

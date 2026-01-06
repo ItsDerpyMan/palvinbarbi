@@ -12,6 +12,7 @@ export const handler = define.handlers({
     async GET(ctx) {
         const roomId = ctx.params.id;
         console.log(`Room ID: ${roomId}`);
+
         // Validate authentication
         if (!ctx.state.jwt || !ctx.state.sessionId || !ctx.state.userId) {
             const headers = new Headers();

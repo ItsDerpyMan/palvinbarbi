@@ -1,21 +1,29 @@
-import { useState, useEffect } from "preact/hooks";
+import { useEffect, useMemo } from "preact/hooks";
 import { QuizControllerLogic } from "./QuizController.class.ts";
 
 export function useQuizController(roomId: string, playerId: string, username: string) {
-    const [controller, setController] = useState<QuizControllerLogic | null>(null);
+    // Create controller lazily only on client side
+    const controller = useMemo(() => {
+        // During SSR, return null
+        if (typeof window === "undefined") {
+            return null;
+        }
 
-    useEffect(() => {
-        // Create controller with URL on client side only
+        console.log("useQuizController - creating controller");
+        // Connect to standalone WebSocket server on port 8000
         const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
-        const url = `${wsProtocol}//${location.hostname}:${location.port}/ws`;
-        const newController = new QuizControllerLogic(roomId, playerId, username, url);
-        setController(newController);
+        const url = `${wsProtocol}//${location.hostname}:8000/api`;
+        console.log("WebSocket URL:", url);
 
-        return () => {
-            newController.destroy();
-            setController(null);
-        };
+        return new QuizControllerLogic(url, roomId, playerId, username);
     }, [roomId, playerId, username]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            controller?.destroy();
+        };
+    }, [controller]);
 
     return controller;
 }

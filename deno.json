@@ -3,6 +3,7 @@
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
     "dev": "vite",
+    "ws": "deno run -A --env ws-server.ts",
     "build": "vite build",
     "start": "deno serve -A _fresh/server.js",
     "update": "deno run -A -r jsr:@fresh/update ."
@@ -13,6 +14,7 @@
     "@fresh/examples": "jsr:@fresh/examples@^1.0.1",
     "@std/http/cookie": "jsr:@std/http@^1.0.22/cookie",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.86.0",
+    "@cliffy/prompt": "jsr:@cliffy/prompt@^1.0.0-rc.8",
     "daisyui": "npm:daisyui@^5.5.14",
     "fresh": "jsr:@fresh/core@^2.2.0",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@1.0.4",

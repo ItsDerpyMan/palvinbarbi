@@ -14,6 +14,7 @@ const WaitingView: FunctionComponent<WaitingViewProps> = ({ controller }) => {
                 <p class="text-sm text-gray-500 mt-2">
                     {controller.totalplayers.value} players in room
                 </p>
+                <span>{controller.timeleft.value} s</span>
             </div>
         </div>
     );

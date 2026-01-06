@@ -1,6 +1,8 @@
 // event-bus.ts
 
 // Define all your events and their payload types here
+import {Phase} from "./scheduler.ts";
+
 export interface EventMap {
     "socket:message": {
         socketId: string;
@@ -13,8 +15,8 @@ export interface EventMap {
     };
     "socket:disconnected": {
         socketId: string;
-        roomId: string | null;
-        playerId: string | null;
+        roomId?: string;
+        playerId?: string;
     };
     "round:started": {
         roomId: string;
@@ -40,7 +42,7 @@ export interface EventMap {
 export interface ClientEventMap {
     "client:connected": { playerId: string; username: string };
     "client:disconnected": { playerId: string };
-    "client:round-started": {
+    "client:round-start": {
         roundId: string;
         round: number;
         duration: number;
@@ -59,15 +61,31 @@ export interface ClientEventMap {
             pick: boolean;
             correct: boolean;
             score: number;
-            totalScore: number;
         }[];
     };
+    "client:stats": {
+        scores: {
+            playerId: string;
+            totalScore: number;
+        }[]
+    }
     "client:submit-state": {
         playerId: string;
         round: number;
         answerCount: number;
         totalPlayers: number;
     };
+    "client:cancel": {
+        reason: string;
+    }
+    "client:transition": {
+        phase: Phase,
+        round: number;
+        endsAt?: number;
+    }
+    "client:game_over": {
+        /* ... */
+    }
     // local events
     "local:connected": Record<string, never>;
     "local:disconnected": Record<string, never>;
