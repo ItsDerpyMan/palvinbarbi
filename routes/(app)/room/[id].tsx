@@ -1,4 +1,4 @@
-import GameIsland from "../../../islands/GameIsland.tsx";
+import QuizController from "../../../islands/QuizController.tsx";
 import { define } from "../../../utils/utils.ts";
 import { databaseWithKey } from "../../../utils/database/database.ts";
 import { deleteAuthCookies } from "../../../handlers/utils/cookies.ts";
@@ -12,15 +12,16 @@ export const handler = define.handlers({
     async GET(ctx) {
         const roomId = ctx.params.id;
         console.log(`Room ID: ${roomId}`);
+
         // Validate authentication
-        if (!ctx.state.jwt || !ctx.state.sessionId) {
+        if (!ctx.state.jwt || !ctx.state.sessionId || !ctx.state.userId) {
             const headers = new Headers();
             deleteAuthCookies(headers);
             headers.set("Location", "/?error=auth_required");
             return new Response(null, { status: 303, headers });
         }
 
-        const { jwt, sessionId, username } = ctx.state;
+        const { jwt, sessionId, userId, username } = ctx.state;
 
         try {
             // Verify session is valid
@@ -37,11 +38,10 @@ export const handler = define.handlers({
             }
 
             // Success - return data for page rendering
-
             return {
                 data: {
                     roomId,
-                    sessionId,
+                    playerId: userId,
                     username: username ?? "Anonymous",
                 },
             };
@@ -57,18 +57,17 @@ export const handler = define.handlers({
 });
 
 export default define.page<typeof handler>((props)=> {
-    console.log("Running")
-    const data = props.data as { roomId: string; sessionId: string; username: string };
+    const data = props.data as { roomId: string; playerId: string; username: string };
     return (
         <>
             <h2 class="text-2xl font-bold mb-4">Room: {data.roomId}</h2>
             <p class="text-white-600 mb-2">Welcome, {data.username}!</p>
-            <p class="text-white-600 mb-2">Session: {data.sessionId}</p>
+            <p class="text-white-600 mb-2">Player ID: {data.playerId}</p>
 
             <main class="mt-8">
-                <GameIsland
+                <QuizController
                     roomId={data.roomId}
-                    userId={data.sessionId}
+                    playerId={data.playerId}
                     username={data.username}
                 />
             </main>

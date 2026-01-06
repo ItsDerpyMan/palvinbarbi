@@ -68,68 +68,6 @@ export default function RoomIsland({ roomId }: RoomIslandProps) {
         };
     }, [roomId]);
 
-    // Supabase Realtime for live updates
-    useEffect(() => {
-        if (deleted.value) return;
-
-        const channel = database().channel(`room-${roomId}`);
-
-        channel
-            .on('presence', { event: 'sync' }, () => {
-                // Get current presence state and count users
-                const state = channel.presenceState();
-                const count = Object.keys(state).length;
-                playerCount.value = count;
-            })
-            .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-                console.log('[Presence] join:', key, newPresences);
-            })
-            .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-                console.log('[Presence] leave:', key, leftPresences);
-            })
-            .on(
-                'postgres_changes',
-                {
-                    event: 'DELETE',
-                    schema: 'public',
-                    table: 'rooms',
-                    filter: `id=eq.${roomId}`,
-                },
-                (_payload) => {
-                    console.log(`[Realtime] Room ${roomId} was deleted`);
-                    deleted.value = true;
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'rooms',
-                    filter: `id=eq.${roomId}`,
-                },
-                (payload) => {
-                    console.log('[Realtime] Room updated:', payload.new);
-                    if (room.value && payload.new) {
-                        room.value = {
-                            ...room.value,
-                            name: payload.new.name ?? room.value.name,
-                            join_code: payload.new.join_code ?? room.value.join_code,
-                        };
-                    }
-                }
-            )
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log(`[Realtime] Subscribed to room-${roomId}`);
-                }
-            });
-
-        return () => {
-            channel.unsubscribe();
-        };
-    }, [roomId, deleted.value]);
-
     const getUsername = (): string | null => {
         const input = document.getElementById("username") as HTMLInputElement | null;
         return input?.value.trim() || null;
