@@ -17,9 +17,9 @@ export class Room {
         autoStart: true,
         outroDuration: 1500,
         revealDuration: 5000,
-        introDuration: 1500,
-        countdownDuration: 10000,
-        roundDuration: 30000,
+        introDuration: 500,
+        countdownDuration: 5000,
+        roundDuration: 7500,
     };
 
     private constructor(id: string, config?: RoomConfig) {
@@ -62,6 +62,7 @@ export class Room {
 
     // Delegate to scheduler
     startRound(duration?: number): void {
+        if (duration) this.config.roundDuration = duration;
         this.scheduler.startGame();
     }
 
@@ -88,6 +89,9 @@ export class Room {
                 player.socket.send(message);
             }
         }
+    }
+    getSchedulePhase() {
+        return this.scheduler.getPhase();
     }
     getPlayerCount(): number { return this.players.length; }
     getPlayers(): Player[] { return [...this.players]; }

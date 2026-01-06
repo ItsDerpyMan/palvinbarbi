@@ -20,28 +20,80 @@ interface ControllerProps {
 
 export default function Controller({ roomId, playerId, username }: ControllerProps) {
     const controller = useQuizController(roomId, playerId, username);
-    // Compute options from prompt (only recalculates when prompt changes)
+
     const leftOption = useMemo(() => {
         if (!controller?.prompt.value) return signal("");
-        const { text, l_index } = controller.prompt.value;
-        return signal(text.slice(0, l_index).trim());
+        const { prompt, l_index } = controller.prompt.value;
+        return signal(prompt.slice(0, l_index).trim());
     }, [controller?.prompt.value]);
 
     const rightOption = useMemo(() => {
         if (!controller?.prompt.value) return signal("");
-        const { text, r_index } = controller.prompt.value;
-        return signal(text.slice(r_index).trim());
+        const { prompt, r_index } = controller.prompt.value;
+        return signal(prompt.slice(r_index).trim());
     }, [controller?.prompt.value]);
 
     useEffect(() => {
         console.log(controller?.state.value)
     }, [controller?.state.value]);
 
-    // Handle null controller (loading state)
     if (!controller) {
-        return <InitializingView />;
+        return (
+            <InitializingView></InitializingView>
+        )
     }
 
+    // Handle null controller (loading state)
+    if (controller.state.value === State.start) {
+       return (
+           <PlayingView
+               controller={controller}
+               leftOption={leftOption}
+               rightOption={rightOption}
+           />
+       )
+    }
+
+    if (controller.state.value === State.lobby) {
+        return (
+            <LobbyView controller={controller} />
+        )
+    }
+    if (controller.state.value === State.countdown) {
+        return (
+            <CountdownView controller={controller} />
+        )
+    }
+    if (controller.state.value === State.intro) {
+        return (
+            <IntroView controller={controller} />
+        )
+    }
+
+    if (controller.state.value === State.end) {
+        return (
+            <RoundEndView />
+        )
+    }
+
+    if(controller.state.value === State.reveal) {
+        return (
+            <RevealView controller={controller} />
+        )
+    }
+    if(controller.state.value === State.outro) {
+        return (
+            <OutroView controller={controller} />
+        )
+    }
+    if(controller.state.value === State.stats && controller.results.value.length > 0) {
+        return (
+            <StatsView
+                controller={controller}
+                currentPlayerId={playerId}
+            />
+        )
+    }
     return (
         <div class="quiz-container flex flex-col gap-6 p-6 max-w-4xl mx-auto">
             {/* Header */}
@@ -54,45 +106,8 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
                 </div>
             </div>
 
-            {/* State Views */}
-            {controller.state.value === State.initializing && <InitializingView />}
-
-            {controller.state.value === State.lobby && (
-                <LobbyView controller={controller} />
-            )}
-
-            {controller.state.value === State.countdown && (
-                <CountdownView controller={controller} />
-            )}
-
-            {controller.state.value === State.intro && (
-                <IntroView controller={controller} />
-            )}
-
-            {controller.state.value === State.start && controller.prompt.value && (
-                <PlayingView
-                    controller={controller}
-                    leftOption={leftOption}
-                    rightOption={rightOption}
-                />
-            )}
-
-            {controller.state.value === State.end && <RoundEndView />}
-
-            {controller.state.value === State.reveal && controller.results.value.length > 0 && (
-                <RevealView controller={controller} />
-            )}
-
-            {controller.state.value === State.outro && (
-                <OutroView controller={controller} />
-            )}
-
-            {controller.state.value === State.stats && controller.results.value.length > 0 && (
-                <StatsView
-                    controller={controller}
-                    currentPlayerId={playerId}
-                />
-            )}
+           {/* State Views */}
+            <InitializingView></InitializingView>
         </div>
     );
 }
