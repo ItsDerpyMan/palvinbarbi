@@ -27,7 +27,7 @@ export class QuizControllerLogic {
     readonly round = signal<number>(0);
 
     readonly prompt = signal<{
-        text: string;
+        prompt: string;
         l_index: number;
         r_index: number;
     } | null>(null);
@@ -79,7 +79,10 @@ export class QuizControllerLogic {
                 this.hasAnswered.value = false;
                 this.count.value = 0;
                 this.prompt.value = data;
-                this.loadPrompt();
+            }),
+            clientEventBus.subscribe("client:round-end", ({ round, roundId}) => {
+                console.log(`[QuizController] Round ${round} ended`);
+                this.endsAt.value = null;
             }),
             clientEventBus.subscribe("client:round-stats", ({ results }) => {
                 console.log("[QuizController] Round stats received");
@@ -88,7 +91,12 @@ export class QuizControllerLogic {
             clientEventBus.subscribe("client:submit-state", ({ answerCount, totalPlayers }) => {
                 this.count.value = answerCount;
                 this.totalplayers.value = totalPlayers;
-            })
+            }),
+            clientEventBus.subscribe("client:state", ({ phase, round, playerCount}) => {
+                this.state.value = phase as unknown as State;
+                this.round.value = round;
+                this.totalplayers.value = playerCount;
+            }),
         );
     }
 
@@ -105,10 +113,6 @@ export class QuizControllerLogic {
                 this.timeleft.value = 0;
             }
         }, 100);
-   }
-
-   private loadPrompt() {
-
    }
 
    submit(pick: boolean) {

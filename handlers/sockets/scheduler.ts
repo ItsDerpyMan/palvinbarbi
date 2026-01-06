@@ -55,15 +55,28 @@ export class Scheduler {
             this.startNextRound();
         })
     }
-    private startNextRound() {
+    private async startNextRound() {
         this.state.roundNumber++;
         this.state.round = new Round(this.config.roundDuration);
 
-        this.transition(Phase.intro);
-        this.schedule('intro', this.config.introDuration, () => {
-            this.transition(Phase.start);
-            this.schedule('end', this.config.roundDuration, () => this.endCurrentRound());
-        })
+        try {
+            const data = await this.state.round!.getRoundData();
+            this.transition(Phase.intro);
+            this.schedule('intro', this.config.introDuration, () => {
+                this.transition(Phase.start);
+                this.emit("client:round-start", {
+                    roundId: this.state.round!.id,
+                    round: this.state.roundNumber,
+                    duration: this.config.roundDuration, // TODO Check if timestamp needed
+                    data,
+                })
+                this.schedule('end', this.config.roundDuration, () => this.endCurrentRound());
+            })
+        } catch (err) {
+            console.error("[Scheduler] Failed to load question: ", err);
+            this.emit("client:cancel", { reason: "Failed to load question" });
+            this.transition(Phase.lobby);
+        }
     }
     private endCurrentRound() {
         this.state.round!.end();
@@ -130,6 +143,11 @@ export class Scheduler {
                 this.startGame();
             }
         }
+        this.emit('client:state', {
+            phase: this.state.phase,
+            round: this.state.roundNumber,
+            playerCount,
+        })
     }
 
     onPlayerLeft(playerCount: number): void {
@@ -138,12 +156,31 @@ export class Scheduler {
             this.transition(Phase.lobby);
             this.emit('client:cancel', { reason: 'Not enough players' });
         }
+        this.emit('client:state', {
+            phase: this.state.phase,
+            round: this.state.roundNumber,
+            playerCount,
+        })
     }
     submitAnswer(playerId: string, pick: boolean) {
         if (this.state.phase !== Phase.start) return false;
         if (!this.state.round) return false;
 
-        return this.state.round.submitAnswer(playerId, pick);
+        const success = this.state.round.submitAnswer(playerId, pick);
+
+        if (success) {
+            const answerCount = this.state.round.getAnswerCount();
+            const totalPlayers = this.room.getPlayerCount();
+
+            this.emit('client:submit-state', {
+                playerId,
+                round: this.state.roundNumber,
+                answerCount,
+                totalPlayers,
+            });
+        }
+
+        return success;
     }
 
     checkEarlyEnd(totalPlayers: number): void {
@@ -152,5 +189,8 @@ export class Scheduler {
             this.clearTimer('round_end');
             this.endCurrentRound();
         }
+    }
+    getPhase() {
+        return this.state.phase;
     }
 }
