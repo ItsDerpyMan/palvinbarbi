@@ -1,7 +1,6 @@
-import { signal, Signal } from "@preact/signals";
+import { signal } from "@preact/signals";
 import { clientConnectionManager} from "../handlers/sockets/client-connection-manager.ts";
 import { clientEventBus} from "../handlers/sockets/event-bus.ts";
-import { Phase } from "../handlers/sockets/scheduler.ts";
 
 export enum State {
     initializing,
@@ -18,7 +17,6 @@ export enum State {
 export class QuizControllerLogic {
     readonly state = signal<State>(State.initializing);
     readonly timeleft = signal(0);
-    readonly endsAt = signal<number | null>(null);
 
     readonly hasAnswered = signal(false);
     readonly count = signal<number>(0);
@@ -35,7 +33,6 @@ export class QuizControllerLogic {
     private roomId: string;
     private playerId: string;
     private unsubscribers: (() => void)[] = [];
-    private timer?: number;
 
     constructor(url: string, roomId: string, playerId: string, username: string) {
         this.roomId = roomId;
@@ -49,7 +46,6 @@ export class QuizControllerLogic {
         });
 
         this.subscribeToEvents();
-        this.startTimer();
     }
 
 
@@ -61,28 +57,28 @@ export class QuizControllerLogic {
             clientEventBus.subscribe("local:disconnected", () => {
                 console.log("[QuizController] Disconnected - back to initializing");
                 this.state.value = State.initializing;
-                this.endsAt.value = null;
+                this.timeleft.value = 0;
             }),
-            clientEventBus.subscribe("client:transition", ({ phase, round, endsAt }) => {
+            clientEventBus.subscribe("client:transition", ({ phase, round, timeleft }) => {
                 console.log(`[QuizController] Transition to phase ${phase}, round ${round}`);
                 this.state.value = phase as unknown as State;
                 this.round.value = round;
-                this.endsAt.value = endsAt ?? null;
+                this.timeleft.value = timeleft ?? 0;
             }),
             clientEventBus.subscribe("client:cancel", ({ reason }) => {
                 console.log(`[QuizController] Game cancelled: ${reason}`);
                 this.state.value = State.lobby;
-                this.endsAt.value = null;
+                this.timeleft.value = 0;
             }),
-            clientEventBus.subscribe("client:round-start", ({ round, duration, data }) => {
-                console.log(`[QuizController] Round ${round} started`);
+            clientEventBus.subscribe("client:round-start", ({ data }) => {
+                console.log(`[QuizController] Round started`);
                 this.hasAnswered.value = false;
                 this.count.value = 0;
                 this.prompt.value = data;
             }),
-            clientEventBus.subscribe("client:round-end", ({ round, roundId}) => {
-                console.log(`[QuizController] Round ${round} ended`);
-                this.endsAt.value = null;
+            clientEventBus.subscribe("client:round-end", () => {
+                console.log(`[QuizController] Round ended`);
+                this.timeleft.value = 0;
             }),
             clientEventBus.subscribe("client:round-stats", ({ results }) => {
                 console.log("[QuizController] Round stats received");
@@ -97,25 +93,13 @@ export class QuizControllerLogic {
                 this.round.value = round;
                 this.totalplayers.value = playerCount;
             }),
+            clientEventBus.subscribe("client:remaining_time", ({ timeleft }) => {
+                this.timeleft.value = timeleft;
+            }),
         );
     }
 
-   private startTimer(): void {
-        this.timer = setInterval(() => {
-            if (this.endsAt.value) {
-                const remaining = Math.max(0, (this.endsAt.value - Date.now()) / 1000);
-                this.timeleft.value = Math.ceil(remaining);
-
-                if (remaining <= 0) {
-                    this.timeleft.value = 0;
-                }
-            } else {
-                this.timeleft.value = 0;
-            }
-        }, 100);
-   }
-
-   submit(pick: boolean) {
+    submit(pick: boolean) {
         if (this.hasAnswered.value || this.state.value !== State.start) return;
 
         clientConnectionManager.send(
@@ -126,10 +110,8 @@ export class QuizControllerLogic {
         this.hasAnswered.value = true;
     }
 
-   destroy() {
+    destroy() {
         this.unsubscribers.forEach((unsub) => unsub());
-        clearInterval(this.timer);
         clientConnectionManager.disconnect();
     }
-
 }
