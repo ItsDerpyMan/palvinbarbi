@@ -1,7 +1,7 @@
-import { useEffect } from "preact/hooks";
 import { computed } from "@preact/signals";
 import { State } from "../hooks/QuizController.class.ts";
 import { useQuizController } from "../hooks/useQuizController.ts";
+import Layout from "../components/quiz/Layout.tsx";
 import InitializingView from "../components/quiz/InitializingView.tsx";
 import LobbyView from "../components/quiz/LobbyView.tsx";
 import CountdownView from "../components/quiz/CountdownView.tsx";
@@ -24,8 +24,8 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
     // Use computed signals - these automatically track controller.prompt and update
     const leftOption = computed(() => {
         if (!controller?.prompt.value) return "";
-        const { prompt, l_index } = controller.prompt.value;
-        return prompt.slice(0, l_index).trim();
+        const { prompt, l_index, r_index } = controller.prompt.value;
+        return prompt.slice(l_index, r_index - 4).trim();
     });
 
     const rightOption = computed(() => {
@@ -34,81 +34,52 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
         return prompt.slice(r_index).trim();
     });
 
-    useEffect(() => {
-        console.log(controller?.state.value)
-    }, [controller?.state.value]);
-
+    // Loading state - no controller yet
     if (!controller) {
-        return (
-            <InitializingView></InitializingView>
-        )
+        return <InitializingView />;
     }
 
-    // Handle null controller (loading state)
-    if (controller.state.value === State.start) {
-       return (
-           <PlayingView
-               controller={controller}
-               leftOption={leftOption}
-               rightOption={rightOption}
-           />
-       )
-    }
+    // Render view based on current state
+    const renderView = () => {
+        switch (controller.state.value) {
+            case State.lobby:
+                return <LobbyView controller={controller} />;
+            case State.countdown:
+                return <CountdownView controller={controller} />;
+            case State.intro:
+                return <IntroView controller={controller} />;
+            case State.start:
+                return (
+                    <PlayingView
+                        controller={controller}
+                        leftOption={leftOption}
+                        rightOption={rightOption}
+                    />
+                );
+            case State.end:
+                return <RoundEndView />;
+            case State.reveal:
+                return <RevealView controller={controller} />;
+            case State.outro:
+                return <OutroView controller={controller} />;
+            case State.stats:
+                if (controller.results.value.length > 0) {
+                    return (
+                        <StatsView
+                            controller={controller}
+                            currentPlayerId={playerId}
+                        />
+                    );
+                }
+                return <InitializingView />;
+            default:
+                return <InitializingView />;
+        }
+    };
 
-    if (controller.state.value === State.lobby) {
-        return (
-            <LobbyView controller={controller} />
-        )
-    }
-    if (controller.state.value === State.countdown) {
-        return (
-            <CountdownView controller={controller} />
-        )
-    }
-    if (controller.state.value === State.intro) {
-        return (
-            <IntroView controller={controller} />
-        )
-    }
-
-    if (controller.state.value === State.end) {
-        return (
-            <RoundEndView />
-        )
-    }
-
-    if(controller.state.value === State.reveal) {
-        return (
-            <RevealView controller={controller} />
-        )
-    }
-    if(controller.state.value === State.outro) {
-        return (
-            <OutroView controller={controller} />
-        )
-    }
-    if(controller.state.value === State.stats && controller.results.value.length > 0) {
-        return (
-            <StatsView
-                controller={controller}
-                currentPlayerId={playerId}
-            />
-        )
-    }
     return (
-        <div class="quiz-container flex flex-col gap-6 p-6 max-w-4xl mx-auto">
-            {/* Header */}
-            <div class="text-center">
-                <h1 class="text-3xl font-bold text-purple-600">Would You Rather?</h1>
-                <div class="flex justify-center gap-4 mt-2 text-sm text-gray-600">
-                    <span>Round {controller.round.value}</span>
-                    <span>•</span>
-                    <span>{State[controller.state.value]}</span>
-                </div>
-            </div>
-
-           {/* State Views */}
-            <InitializingView></InitializingView>
-        </div>
+        <Layout controller={controller}>
+            {renderView()}
+        </Layout>
     );
 }

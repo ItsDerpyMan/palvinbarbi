@@ -8,46 +8,47 @@ export interface StatsViewProps {
 
 const StatsView: FunctionComponent<StatsViewProps> = ({ controller, currentPlayerId }) => {
     return (
-        <div class="bg-white rounded-lg shadow-xl p-6">
-            <h2 class="text-3xl font-bold mb-6 text-center text-purple-600">
+        <div class="quiz-card">
+            <h2 class="text-3xl font-bold mb-6 text-center text-secondary">
                 Round {controller.round.value} Results
             </h2>
 
             <div class="space-y-3">
-                {controller.results.value.map((result, index) => (
-                    <div
-                        key={result.playerId}
-                        class={`
-                            p-4 rounded-lg flex items-center justify-between
-                            ${result.playerId === currentPlayerId
-                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold'
-                                : 'bg-gray-100'
-                            }
-                        `}
-                    >
-                        <div class="flex items-center gap-3">
-                            <span class="text-2xl font-bold">#{index + 1}</span>
-                            <span class="text-lg">
-                                {result.playerId === currentPlayerId ? "You" : "Player"}
-                            </span>
-                        </div>
+                {controller.results.value.map((result, index) => {
+                    const isCurrentPlayer = result.playerId === currentPlayerId;
+                    return (
+                        <div
+                            key={result.playerId}
+                            class={`quiz-result-item ${
+                                isCurrentPlayer
+                                    ? 'bg-gradient-to-r from-primary to-secondary text-primary-content'
+                                    : 'bg-base-200 border-base-300'
+                            }`}
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl font-bold">#{index + 1}</span>
+                                <span class="text-lg">
+                                    {isCurrentPlayer ? "You" : "Player"}
+                                </span>
+                            </div>
 
-                        <div class="flex items-center gap-4">
-                            <span class={`px-3 py-1 rounded ${result.correct ? 'bg-green-500' : 'bg-red-500'} text-white text-sm`}>
-                                {result.pick ? "Left" : "Right"}
-                            </span>
-                            <span class="text-lg">
-                                {result.correct ? "✓" : "✗"}
-                            </span>
-                            <span class="text-lg font-bold">
-                                +{result.score}
-                            </span>
-                            <span class="text-sm opacity-75">
-                                Total: {result.totalScore}
-                            </span>
+                            <div class="flex items-center gap-4">
+                                <span class={`badge ${result.correct ? 'badge-success' : 'badge-error'}`}>
+                                    {result.pick ? "Left" : "Right"}
+                                </span>
+                                <span class="text-lg">
+                                    {result.correct ? "✓" : "✗"}
+                                </span>
+                                <span class="text-lg font-bold">
+                                    +{result.score}
+                                </span>
+                                <span class={`text-sm ${isCurrentPlayer ? 'opacity-75' : 'text-base-content/60'}`}>
+                                    Total: {result.totalScore}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

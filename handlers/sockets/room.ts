@@ -7,6 +7,9 @@ export interface RoomConfig extends ScheduleConfig {
     maxRounds: number;
     autoStart: boolean;
 }
+
+type Scores = { playerId: string, score: number }[];
+
 export class Room {
     private id: string;
     private players: Player[];
@@ -74,6 +77,15 @@ export class Room {
         }
 
         return success;
+    }
+
+    applyRoundScores(results: Scores): void {
+        for (const result of results) {
+            this.getPlayerById(result.playerId)?.addScore(result.score);
+        }
+    }
+    getPlayerById(id: string): Player | undefined {
+        return this.players.find(p => p.id === id);
     }
 
     // Room keeps broadcast, getters, etc.

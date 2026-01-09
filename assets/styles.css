@@ -1,38 +1,91 @@
 @import "tailwindcss";
-@plugin "daisyui";
-@tailwind components;
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
 @tailwind base;
+@tailwind components;
 @tailwind utilities;
 
+/* ===== Reusable Quiz Component Styles ===== */
+@layer components {
+  /* View container - used by all quiz views */
+  .quiz-view {
+    @apply text-center p-12 rounded-box border-2 border-base-300 bg-base-200;
+  }
+
+  /* View with gradient background */
+  .quiz-view-gradient {
+    @apply text-center p-12 rounded-box shadow-xl;
+  }
+
+  /* Card-like container */
+  .quiz-card {
+    @apply card bg-base-100 shadow-lg p-6;
+  }
+
+  /* Result item row */
+  .quiz-result-item {
+    @apply p-4 rounded-box border-2 flex items-center justify-between;
+  }
+
+  /* Animated icon container */
+  .quiz-icon {
+    @apply text-6xl mb-4;
+  }
+
+  /* Loading dots animation */
+  .quiz-loading-dots {
+    @apply flex justify-center gap-2 mt-6;
+  }
+
+  .quiz-loading-dot {
+    @apply w-3 h-3 bg-primary rounded-full animate-bounce;
+  }
+
+  /* Option box for playing view */
+  .quiz-option-box {
+    @apply bg-base-200 backdrop-blur-sm rounded-box p-4 shadow-lg text-center text-lg font-medium w-full h-full transition-all;
+  }
+
+  .quiz-option-box:hover:not(:disabled) {
+    @apply scale-105;
+  }
+
+  .quiz-option-box:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+/* ===== Legacy Styles ===== */
 .fresh-gradient {
 
 }
 
-.card{
-  @apply space-y-8 rounded-xl ;
+.card {
+  @apply space-y-8 rounded-xl;
   width: 60%;
   position: relative;
   height: 9rem;
-
 }
 
-.inner{
+.inner {
   padding-left: .5rem;
   padding-right: .5rem;
-
   position: absolute;
   bottom: 0.4rem;
   width: 100%;
 }
-h1{
+
+h1 {
   width: fit-content;
   margin-bottom: 1.5rem;
   font-size: 4rem;
   @apply mr-auto ml-auto;
 }
 
-#would{
-  display:inline-flex;
+#would {
+  display: inline-flex;
   color: red;
   animation-name: would;
   animation-iteration-count: infinite;
@@ -40,17 +93,20 @@ h1{
   animation-timing-function: linear;
   animation-direction: alternate;
 }
+
 @keyframes would {
-  from{color: red;
-      transform: scale(1.2);
+  from {
+    color: red;
+    transform: scale(1.2);
   }
-  to{color: blue;
+  to {
+    color: blue;
     transform: scale(1);
   }
 }
 
-#rather{
-  display:inline-flex;
+#rather {
+  display: inline-flex;
   color: blue;
   animation-name: rather;
   animation-iteration-count: infinite;
@@ -58,23 +114,20 @@ h1{
   animation-timing-function: linear;
   animation-direction: alternate;
 }
-@keyframes rather{
-  from{color: blue;
+
+@keyframes rather {
+  from {
+    color: blue;
     transform: scale(1);
   }
-  to{color: red;
+  to {
+    color: red;
     transform: scale(1.2);
   }
-
 }
-.room{
+
+.room {
   padding-left: .5rem;
   padding-right: .5rem;
   padding-top: .7rem;
 }
-
-/*
-*{
-  border:1px solid violet;
-}
-*/

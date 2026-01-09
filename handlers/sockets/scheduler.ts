@@ -85,11 +85,12 @@ export class Scheduler {
         this.transition(Phase.end);
         this.emit('client:round-end', { roundId: this.state.round!.id, round: this.state.roundNumber });
 
-        this.schedule('intro', this.config.introDuration, () => this.revealRoundStats());
+        this.revealRoundStats();
     }
 
     private revealRoundStats() {
         const results = this.state.round!.calculateScores();
+        this.room.applyRoundScores(results);
 
         this.transition(Phase.reveal);
         this.emit('client:round-stats', {
@@ -102,10 +103,13 @@ export class Scheduler {
             this.schedule('outro', this.config.outroDuration, () => {
                 if (this.state.roundNumber >= this.config.maxRounds) { // maxRounds
                     this.transition(Phase.stats);
-                    this.emit('client:game_over', { /* final results */ });
+                    this.schedule('end', this.config.revealDuration, this.scheduleGameOver);
                 } else this.startNextRound();
             });
         })
+    }
+    private scheduleGameOver(): void {
+        this.emit('client:game_over', { /* final results */ });
     }
 
     private schedule(event: string, delay: number, callback: () => void) {
