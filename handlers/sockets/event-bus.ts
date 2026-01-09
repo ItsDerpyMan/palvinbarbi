@@ -86,10 +86,13 @@ export interface ClientEventMap {
     "client:transition": {
         phase: Phase,
         round: number;
-        endsAt?: number;
+        timeleft: number;
     }
     "client:game_over": {
         /* ... */
+    }
+    "client:remaining_time": {
+        timeleft: number;
     }
     // local events
     "local:connected": Record<string, never>;

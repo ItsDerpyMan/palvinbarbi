@@ -1,7 +1,7 @@
 // scheduler.ts
 import { ClientEventMap } from "./event-bus.ts";
 import {Round} from "./round.ts";
-import { setTimeout, clearTimeout } from 'node:timers';
+import { setTimeout, clearTimeout, setInterval, clearInterval } from 'node:timers';
 import {Room, RoomConfig} from "./room.ts";
 
 export interface ScheduleConfig {
@@ -32,6 +32,7 @@ interface State {
 export class Scheduler {
     private state: State;
     private timers: Map<string, NodeJS.Timeout> = new Map();
+    private countdownInterval: NodeJS.Timeout | null = null;
 
     constructor(
         private room: Room,
@@ -109,10 +110,33 @@ export class Scheduler {
 
     private schedule(event: string, delay: number, callback: () => void) {
         this.clearTimer(event);
+        this.stopCountdown();
+
+        const endsAt = Date.now() + delay;
+
+        // Start countdown interval - emits remaining time every second
+        this.countdownInterval = setInterval(() => {
+            const remaining = Math.ceil((endsAt - Date.now()) / 1000);
+            if (remaining >= 0) {
+                this.emit('client:remaining_time', { timeleft: remaining });
+            }
+        }, 1000);
+
+        // Emit initial time immediately
+        this.emit('client:remaining_time', { timeleft: Math.ceil(delay / 1000) });
+
         this.timers.set(event, setTimeout(() => {
             this.timers.delete(event);
+            this.stopCountdown();
             callback();
         }, delay));
+    }
+
+    private stopCountdown() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
     }
     private clearTimer(event: string) {
         const timer = this.timers.get(event);
@@ -130,10 +154,13 @@ export class Scheduler {
 
     private transition(phase: Phase) {
         this.state.phase = phase;
+        const timeleft = this.state.round
+            ? Math.ceil(this.state.round.getRemainingTime() / 1000)
+            : 0;
         this.emit('client:transition', {
             phase,
             round: this.state.roundNumber,
-            endsAt: this.state.round?.endsAt ?? undefined,
+            timeleft,
         });
     }
 
@@ -153,6 +180,7 @@ export class Scheduler {
     onPlayerLeft(playerCount: number): void {
         if (this.state.phase === Phase.countdown && playerCount < this.config.minPlayers) {
             this.clearTimer('countdown');
+            this.stopCountdown();
             this.transition(Phase.lobby);
             this.emit('client:cancel', { reason: 'Not enough players' });
         }

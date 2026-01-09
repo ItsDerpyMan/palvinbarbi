@@ -39,7 +39,8 @@ export class Round {
             .from("prompts")
             .select("prompt, l_index, r_index")
             .order('id', { ascending: true })
-            .range(index, index);
+            .range(index, index)
+            .single();
 
         if (error || !data) {
             throw new Error("Failed to initialize player information:", error);

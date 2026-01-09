@@ -1,8 +1,8 @@
-import type { Signal } from "@preact/signals";
+import type { ReadonlySignal } from "@preact/signals";
 import {Button} from "./Button.tsx";
 
 interface QuestionBoxProps {
-    text: Signal<string>;
+    text: ReadonlySignal<string>;
     callback?: () => void | Promise<void>;
     class?: string;
     id?: string;

@@ -1,12 +1,12 @@
 import type { FunctionComponent } from "preact";
-import type { Signal } from "@preact/signals";
+import type { ReadonlySignal } from "@preact/signals";
 import type { QuizControllerLogic } from "../../hooks/QuizController.class.ts";
 import Box from "../Box.tsx";
 
 export interface PlayingViewProps {
     controller: QuizControllerLogic;
-    leftOption: Signal<string>;
-    rightOption: Signal<string>;
+    leftOption: ReadonlySignal<string>;
+    rightOption: ReadonlySignal<string>;
 }
 
 const PlayingView: FunctionComponent<PlayingViewProps> = ({ controller, leftOption, rightOption }) => {

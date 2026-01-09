@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "preact/hooks";
-import { signal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
+import { computed } from "@preact/signals";
 import { State } from "../hooks/QuizController.class.ts";
 import { useQuizController } from "../hooks/useQuizController.ts";
 import InitializingView from "../components/quiz/InitializingView.tsx";
@@ -21,17 +21,18 @@ interface ControllerProps {
 export default function Controller({ roomId, playerId, username }: ControllerProps) {
     const controller = useQuizController(roomId, playerId, username);
 
-    const leftOption = useMemo(() => {
-        if (!controller?.prompt.value) return signal("");
+    // Use computed signals - these automatically track controller.prompt and update
+    const leftOption = computed(() => {
+        if (!controller?.prompt.value) return "";
         const { prompt, l_index } = controller.prompt.value;
-        return signal(prompt.slice(0, l_index).trim());
-    }, [controller?.prompt.value]);
+        return prompt.slice(0, l_index).trim();
+    });
 
-    const rightOption = useMemo(() => {
-        if (!controller?.prompt.value) return signal("");
+    const rightOption = computed(() => {
+        if (!controller?.prompt.value) return "";
         const { prompt, r_index } = controller.prompt.value;
-        return signal(prompt.slice(r_index).trim());
-    }, [controller?.prompt.value]);
+        return prompt.slice(r_index).trim();
+    });
 
     useEffect(() => {
         console.log(controller?.state.value)
