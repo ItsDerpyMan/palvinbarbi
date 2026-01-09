@@ -37,6 +37,7 @@ class RoomManager {
             const data = payload as { answer: boolean };
             this.handleAnswer(roomId, socketId, data.answer);
         }
+
     }
 
     private async handleDisconnect({ socketId: _socketId, roomId, playerId }: {
@@ -119,6 +120,7 @@ class RoomManager {
         // Broadcast to room
         room.broadcast("client:connected", { playerId, username });
     }
+
 
     getRooms(): Map<string, Room> {
         return this.rooms;

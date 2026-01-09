@@ -7,42 +7,40 @@ export interface RevealViewProps {
 
 const RevealView: FunctionComponent<RevealViewProps> = ({ controller }) => {
     return (
-        <div class="bg-white rounded-lg shadow-lg p-8">
+        <div class="quiz-card">
             <div class="text-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800 mb-2">Round Results</h2>
-                <p class="text-gray-600">See how everyone did!</p>
+                <h2 class="text-3xl font-bold text-base-content mb-2">Round Results</h2>
+                <p class="text-base-content/60">See how everyone did!</p>
             </div>
 
             <div class="space-y-4">
                 {controller.results.value.map((result) => (
                     <div
                         key={result.playerId}
-                        class={`
-                            p-4 rounded-lg border-2 flex items-center justify-between
-                            ${result.correct
-                                ? 'bg-green-50 border-green-300'
-                                : 'bg-red-50 border-red-300'
-                            }
-                        `}
+                        class={`quiz-result-item ${
+                            result.correct
+                                ? 'bg-success/20 border-success'
+                                : 'bg-error/20 border-error'
+                        }`}
                     >
                         <div class="flex items-center gap-3">
                             <div class="text-2xl">
                                 {result.correct ? '✅' : '❌'}
                             </div>
                             <div>
-                                <p class="font-semibold text-gray-800">
+                                <p class="font-semibold text-base-content">
                                     Player {result.playerId.slice(0, 8)}
                                 </p>
-                                <p class="text-sm text-gray-600">
+                                <p class="text-sm text-base-content/60">
                                     Chose: {result.pick ? 'Left' : 'Right'}
                                 </p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-2xl font-bold text-blue-600">
+                            <p class="text-2xl font-bold text-primary">
                                 +{result.score}
                             </p>
-                            <p class="text-xs text-gray-500">points</p>
+                            <p class="text-xs text-base-content/50">points</p>
                         </div>
                     </div>
                 ))}

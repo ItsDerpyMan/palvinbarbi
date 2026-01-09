@@ -13,62 +13,57 @@ const PlayingView: FunctionComponent<PlayingViewProps> = ({ controller, leftOpti
     return (
         <>
             {/* Question */}
-            <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-xl shadow-lg">
+            <div class="card bg-gradient-to-r from-primary to-secondary text-primary-content p-6 shadow-xl">
                 <p class="text-2xl font-bold text-center">
                     {controller.prompt.value?.prompt}
                 </p>
             </div>
 
             {/* Option Boxes */}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <Box
                     text={leftOption}
                     callback={() => controller.submit(true)}
-                    class={`
-                        h-[200px] transition-all
-                        ${controller.hasAnswered.value ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
-                    `}
+                    disabled={controller.hasAnswered.value}
+                    class="h-[200px]"
                 />
                 <Box
                     text={rightOption}
                     callback={() => controller.submit(false)}
-                    class={`
-                        h-[200px] transition-all
-                        ${controller.hasAnswered.value ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
-                    `}
+                    disabled={controller.hasAnswered.value}
+                    class="h-[200px]"
                 />
             </div>
 
             {/* Timer & Progress */}
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="quiz-card mt-6">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-600">Time Remaining</span>
-                    <span class="text-3xl font-bold text-blue-600">
-                        {controller.timeleft.value}s
+                    <span class="text-sm font-medium text-base-content/70">Time Remaining</span>
+                    <span class="countdown font-mono text-3xl text-primary">
+                        <span style={{ "--value": controller.timeleft.value } as any}></span>
                     </span>
                 </div>
 
                 {/* Progress bar */}
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                        class="bg-blue-600 h-2 rounded-full transition-all duration-100"
-                        style={{ width: `${(controller.timeleft.value / 30) * 100}%` }}
-                    />
-                </div>
+                <progress
+                    class="progress progress-primary w-full"
+                    value={(controller.timeleft.value / 30) * 100}
+                    max="100"
+                ></progress>
 
                 {/* Answer status */}
                 <div class="mt-4 text-center">
                     {controller.hasAnswered.value ? (
-                        <p class="text-green-600 font-medium">
-                            ✓ Answer submitted! Waiting for others...
-                        </p>
+                        <div class="alert alert-success">
+                            <span>Answer submitted! Waiting for others...</span>
+                        </div>
                     ) : (
-                        <p class="text-orange-600 font-medium">
-                            Choose your answer!
-                        </p>
+                        <div class="alert alert-warning">
+                            <span>Choose your answer!</span>
+                        </div>
                     )}
 
-                    <p class="text-sm text-gray-500 mt-2">
+                    <p class="text-sm text-base-content/50 mt-2">
                         {controller.count.value} / {controller.totalplayers.value} players answered
                     </p>
                 </div>

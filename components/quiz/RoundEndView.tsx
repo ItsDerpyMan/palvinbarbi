@@ -1,9 +1,10 @@
 export default function RoundEndView() {
     return (
-        <div class="text-center p-12 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg">
-            <div class="text-6xl mb-4">⏱️</div>
+        <div class="quiz-view-gradient bg-gradient-to-r from-warning to-error text-warning-content">
+            <div class="quiz-icon">⏱️</div>
             <p class="text-2xl font-bold">Time's Up!</p>
-            <p class="text-lg mt-2">Calculating results...</p>
+            <p class="text-lg mt-2 opacity-80">Calculating results...</p>
+            <span class="loading loading-dots loading-lg mt-4"></span>
         </div>
     );
 }
