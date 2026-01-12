@@ -1,6 +1,6 @@
 import type { FunctionComponent } from "preact";
 import type { ReadonlySignal } from "@preact/signals";
-import type { QuizControllerLogic } from "../../hooks/QuizController.class.ts";
+import type { QuizControllerLogic } from "../../islands/hooks/QuizController.class.ts";
 import Box from "../Box.tsx";
 
 export interface PlayingViewProps {

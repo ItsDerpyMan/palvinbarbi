@@ -1,4 +1,4 @@
-import { define } from "../../utils/utils.ts";
+import { define } from "../../handlers/utils/utils.ts";
 
 export default define.layout((props) => (
     <html>

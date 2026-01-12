@@ -1,37 +1,39 @@
-// ws-cli.ts - CLI interface for the WebSocket server
+// server/index.ts - Unified CLI for the application
 import { Select, Input, Confirm } from "@cliffy/prompt";
-import { roomManager } from "./handlers/sockets/room-manager.ts";
+import { roomManager } from "../room-manager.ts";
+import { logger } from "./logger.ts";
 
-export class WSCli {
+export class AppCli {
     private running = false;
 
-    async start() {
+    async start(): Promise<void> {
         this.running = true;
-        console.log("\n🎮 WebSocket Server CLI Started");
-        console.log("================================\n");
+        logger.cli.info("CLI Started");
 
         while (this.running) {
             try {
                 await this.showMainMenu();
             } catch (error) {
                 if (error instanceof Deno.errors.Interrupted) {
-                    console.log("\n\n👋 Exiting CLI...");
+                    logger.cli.info("Exiting CLI...");
                     this.running = false;
                     break;
                 }
-                console.error("Error:", error);
+                logger.cli.error("Menu error:", error);
             }
         }
     }
 
-    private async showMainMenu() {
+    private async showMainMenu(): Promise<void> {
+        console.log("\n");
         const action = await Select.prompt({
             message: "Select an action:",
             options: [
                 { name: "🚀 Start Game", value: "start_round" },
                 { name: "📊 Show Room Status", value: "room_status" },
-                { name: "📨 Broadcast Custom Message", value: "broadcast" },
-                { name: "❌ Exit CLI", value: "exit" },
+                { name: "📨 Broadcast Message", value: "broadcast" },
+                { name: "🔄 Clear Console", value: "clear" },
+                { name: "❌ Exit", value: "exit" },
             ],
         });
 
@@ -45,16 +47,20 @@ export class WSCli {
             case "broadcast":
                 await this.handleBroadcast();
                 break;
+            case "clear":
+                console.clear();
+                logger.cli.info("Console cleared");
+                break;
             case "exit":
                 this.running = false;
-                console.log("\n👋 Goodbye!\n");
+                logger.cli.info("Goodbye!");
                 break;
         }
     }
 
-    private async handleStartRound() {
+    private async handleStartRound(): Promise<void> {
         console.log("\n🚀 Start Round");
-        console.log("──────────────");
+        console.log("─".repeat(30));
 
         const rooms = roomManager.getRooms();
 
@@ -63,7 +69,6 @@ export class WSCli {
             return;
         }
 
-        // Create options for room selection
         const roomOptions = Array.from(rooms.entries()).map(([id, room]) => ({
             name: `Room ${id} - ${room.getPlayerCount()} player(s)`,
             value: id,
@@ -88,24 +93,24 @@ export class WSCli {
         if (confirm) {
             try {
                 room.startRound();
-                console.log(`\n✅ Game started successfully in room "${roomId}"!\n`);
+                logger.game.info(`Game started in room "${roomId}"`);
             } catch (error) {
-                console.error(`\n❌ Failed to start round:`, error, "\n");
+                logger.game.error(`Failed to start round:`, error);
             }
         } else {
             console.log("\n❌ Game start cancelled.\n");
         }
     }
 
-
-    private async showRoomStatus() {
+    private async showRoomStatus(): Promise<void> {
         console.log("\n📊 Room Status");
-        console.log("──────────────");
+        console.log("─".repeat(30));
 
         const rooms = roomManager.getRooms();
 
         if (rooms.size === 0) {
             console.log("No active rooms.\n");
+            await Input.prompt({ message: "Press Enter to continue..." });
             return;
         }
 
@@ -125,9 +130,9 @@ export class WSCli {
         await Input.prompt({ message: "Press Enter to continue..." });
     }
 
-    private async handleBroadcast() {
-        console.log("\n📨 Broadcast Custom Message");
-        console.log("───────────────────────────");
+    private async handleBroadcast(): Promise<void> {
+        console.log("\n📨 Broadcast Message");
+        console.log("─".repeat(30));
 
         const rooms = roomManager.getRooms();
 
@@ -157,7 +162,7 @@ export class WSCli {
         const payloadStr = await Input.prompt({
             message: "Enter payload (JSON):",
             default: '{"reason": "Test message"}',
-            validate: (value) => {
+            validate: (value: string) => {
                 try {
                     JSON.parse(value);
                     return true;
@@ -182,7 +187,7 @@ export class WSCli {
                         room.broadcast(eventName, payload);
                         count++;
                     }
-                    console.log(`\n✅ Broadcasted to ${count} rooms!\n`);
+                    logger.room.info(`Broadcasted to ${count} rooms`);
                 } else {
                     const room = rooms.get(roomId);
                     if (!room) {
@@ -190,14 +195,15 @@ export class WSCli {
                         return;
                     }
                     room.broadcast(eventName, payload);
-                    console.log(`\n✅ Broadcasted to room "${roomId}"!\n`);
+                    logger.room.info(`Broadcasted to room "${roomId}"`);
                 }
             } catch (error) {
-                console.error(`\n❌ Failed to broadcast:`, error, "\n");
+                logger.cli.error(`Failed to broadcast:`, error);
             }
         } else {
             console.log("\n❌ Broadcast cancelled.\n");
         }
     }
-
 }
+
+export const cli = new AppCli();

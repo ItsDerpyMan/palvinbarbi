@@ -1,4 +1,4 @@
-import { define } from "../utils/utils.ts";
+import { define } from "./utils/utils.ts";
 
 export const getPublicKeys = define.handlers({
   POST() {

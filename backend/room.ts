@@ -22,7 +22,7 @@ export class Room {
         revealDuration: 5000,
         introDuration: 500,
         countdownDuration: 5000,
-        roundDuration: 7500,
+        roundDuration: 30000,
     };
 
     private constructor(id: string, config?: RoomConfig) {

@@ -1,5 +1,5 @@
 import type { FunctionComponent } from "preact";
-import type { QuizControllerLogic } from "../../hooks/QuizController.class.ts";
+import type { QuizControllerLogic } from "../../islands/hooks/QuizController.class.ts";
 
 export interface OutroViewProps {
     controller: QuizControllerLogic;

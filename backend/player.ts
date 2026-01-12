@@ -1,19 +1,25 @@
 // player.ts
 import { connectionManager } from "./connection-manager.ts";
-import { database } from "../../utils/database/database.ts";
+import { database } from "../handlers/utils/database/database.ts";
 
+export enum Status {
+    online,
+    offline,
+}
 export class Player {
     id: string;
     username: string;
     created_at: number;
     score: number;
+    status: Status;
     socket: WebSocket;
 
-    private constructor(id: string, username: string, created_at: number, score: number, socket: WebSocket) {
+    private constructor(id: string, username: string, created_at: number, score: number, status: Status, socket: WebSocket) {
         this.id = id;
         this.username = username;
         this.created_at = created_at;
         this.score = score;
+        this.status = status
         this.socket = socket;
     }
 
@@ -36,6 +42,7 @@ export class Player {
             data.username,
             new Date(data.created_at).getTime(),
             0,
+            Status.online,
             conn.socket,
         );
     }
@@ -45,7 +52,7 @@ export class Player {
         const conn = reg.getBySocketId(socketId);
         if (!conn) throw new Error(`No connection available for socketId: ${socketId}`);
 
-        return new Player(playerId, username, Date.now(), 0, conn.socket);
+        return new Player(playerId, username, Date.now(), 0, Status.online, conn.socket);
     }
 
     addScore(delta: number) {
