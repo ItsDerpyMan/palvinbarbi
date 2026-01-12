@@ -1,5 +1,5 @@
-import { Auth, define } from "../utils/utils.ts";
-import { databaseWithKey } from "../utils/database/database.ts";
+import { Auth, define } from "./utils/utils.ts";
+import { databaseWithKey } from "./utils/database/database.ts";
 import { deleteAuthCookies } from "./utils/cookies.ts";
 import {jsonError, validateSession} from "./utils/helpers.ts";
 

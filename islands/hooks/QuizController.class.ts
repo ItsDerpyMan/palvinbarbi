@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
-import { clientConnectionManager} from "../handlers/sockets/client-connection-manager.ts";
-import { clientEventBus} from "../handlers/sockets/event-bus.ts";
+import { clientConnectionManager} from "../../backend/client-connection-manager.ts";
+import { clientEventBus} from "../../backend/event-bus.ts";
 
 export enum State {
     initializing,
@@ -95,6 +95,10 @@ export class QuizControllerLogic {
             }),
             clientEventBus.subscribe("client:remaining_time", ({ timeleft }) => {
                 this.timeleft.value = timeleft;
+            }),
+            clientEventBus.subscribe("client:game_over", ({ roundId, round }) => {
+                console.log("[QuizController] Game over", roundId, round);
+                this.destroy()
             }),
         );
     }

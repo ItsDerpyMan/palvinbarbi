@@ -1,8 +1,8 @@
-import { databaseWithKey } from "../utils/database/database.ts";
-import type { Tables, TablesInsert } from "../utils/database/database.types.ts";
+import { databaseWithKey } from "./utils/database/database.ts";
+import type { Tables, TablesInsert } from "./utils/database/database.types.ts";
 import { setCookie, deleteAuthCookies} from "./utils/cookies.ts";
 import { jsonError} from "./utils/helpers.ts";
-import {Auth, define} from "../utils/utils.ts";
+import {Auth, define} from "./utils/utils.ts";
 import { Context } from "fresh";
 /**
  * /api/login

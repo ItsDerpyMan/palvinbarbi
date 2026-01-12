@@ -1,16 +1,16 @@
 import { computed } from "@preact/signals";
-import { State } from "../hooks/QuizController.class.ts";
-import { useQuizController } from "../hooks/useQuizController.ts";
-import Layout from "../components/quiz/Layout.tsx";
-import InitializingView from "../components/quiz/InitializingView.tsx";
-import LobbyView from "../components/quiz/LobbyView.tsx";
-import CountdownView from "../components/quiz/CountdownView.tsx";
-import IntroView from "../components/quiz/IntroView.tsx";
-import PlayingView from "../components/quiz/PlayingView.tsx";
-import RoundEndView from "../components/quiz/RoundEndView.tsx";
-import RevealView from "../components/quiz/RevealView.tsx";
-import OutroView from "../components/quiz/OutroView.tsx";
-import StatsView from "../components/quiz/StatsView.tsx";
+import { State } from "./hooks/QuizController.class.ts";
+import { useQuizController } from "./hooks/useQuizController.ts";
+import Layout from "../components/view/Layout.tsx";
+import InitializingView from "../components/view/InitializingView.tsx";
+import LobbyView from "../components/view/LobbyView.tsx";
+import CountdownView from "../components/view/CountdownView.tsx";
+import IntroView from "../components/view/IntroView.tsx";
+import PlayingView from "../components/view/PlayingView.tsx";
+import RoundEndView from "../components/view/RoundEndView.tsx";
+import RevealView from "../components/view/RevealView.tsx";
+import OutroView from "../components/view/OutroView.tsx";
+import StatsView from "../components/view/StatsView.tsx";
 
 interface ControllerProps {
     roomId: string;

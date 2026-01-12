@@ -13,6 +13,9 @@ export interface EventMap {
     "socket:connected": {
         socketId: string;
     };
+    "socket:reconnect": {
+        socketId: string;
+    };
     "socket:disconnected": {
         socketId: string;
         roomId?: string;
@@ -82,18 +85,23 @@ export interface ClientEventMap {
     };
     "client:cancel": {
         reason: string;
-    }
+    };
+    "client:reconnect": {
+        playerId: string;
+        username: string;
+    };
     "client:transition": {
         phase: Phase,
         round: number;
         timeleft: number;
-    }
+    };
     "client:game_over": {
-        /* ... */
-    }
+        roundId: string;
+        round: number;
+    };
     "client:remaining_time": {
         timeleft: number;
-    }
+    };
     // local events
     "local:connected": Record<string, never>;
     "local:disconnected": Record<string, never>;

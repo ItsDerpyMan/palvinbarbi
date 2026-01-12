@@ -1,6 +1,6 @@
 import type { ComponentChildren, FunctionComponent } from "preact";
-import type { QuizControllerLogic } from "../../hooks/QuizController.class.ts";
-import { State } from "../../hooks/QuizController.class.ts";
+import type { QuizControllerLogic } from "../../islands/hooks/QuizController.class.ts";
+import { State } from "../../islands/hooks/QuizController.class.ts";
 
 export interface LayoutProps {
     controller: QuizControllerLogic;

@@ -1,7 +1,7 @@
 import { setCookie} from "./utils/cookies.ts";
 import {jsonError, validateSession} from "./utils/helpers.ts";
-import { Auth, define } from "../utils/utils.ts";
-import { databaseWithKey } from "../utils/database/database.ts";
+import { Auth, define } from "./utils/utils.ts";
+import { databaseWithKey } from "./utils/database/database.ts";
 import { Context } from "fresh";
 
 // Configuration
