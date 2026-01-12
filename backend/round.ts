@@ -1,6 +1,6 @@
 // round.ts
 
-import {database} from "../../utils/database/database.ts";
+import {database} from "../handlers/utils/database/database.ts";
 
 export interface Submission {
     playerId: string;

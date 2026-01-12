@@ -1,5 +1,5 @@
-import {define} from "../utils/utils.ts";
-import {database} from "../utils/database/database.ts";
+import {define} from "./utils/utils.ts";
+import {database} from "./utils/database/database.ts";
 
 export const handleRoom = define.handlers({
     async POST(ctx) {

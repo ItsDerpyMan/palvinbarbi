@@ -109,7 +109,8 @@ export class Scheduler {
         })
     }
     private scheduleGameOver(): void {
-        this.emit('client:game_over', { /* final results */ });
+        const roundId = this.state.round?.id;
+        if(roundId) this.emit('client:game_over', { roundId, round: this.state.roundNumber });
     }
 
     private schedule(event: string, delay: number, callback: () => void) {

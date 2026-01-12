@@ -1,5 +1,5 @@
-import {define} from "../utils/utils.ts";
-import {databaseWithKey} from "../utils/database/database.ts";
+import {define} from "./utils/utils.ts";
+import {databaseWithKey} from "./utils/database/database.ts";
 import { deleteAuthCookies} from "./utils/cookies.ts";
 
 /**

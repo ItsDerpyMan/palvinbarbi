@@ -1,4 +1,4 @@
-import {databaseWithKey} from "../../utils/database/database.ts";
+import {databaseWithKey} from "./database/database.ts";
 
 export function jsonError(message: string, status: number): Response {
     return new Response(

@@ -2,7 +2,9 @@
   "nodeModulesDir": "auto",
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
-    "dev": "vite",
+    "dev": "deno run -A --env serve.ts",
+    "dev:headless": "deno run -A --env serve.ts --no-cli",
+    "dev:vite": "vite",
     "ws": "deno run -A --env ws-server.ts",
     "build": "vite build",
     "start": "deno serve -A _fresh/server.js",

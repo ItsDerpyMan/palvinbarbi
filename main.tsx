@@ -1,6 +1,5 @@
 import { App, Context, staticFiles } from "fresh";
-import type { Auth } from "./utils/utils.ts";
-
+import type { Auth } from "./handlers/utils/utils.ts";
 export const app = new App<Auth>().use(staticFiles());
 
 app.use(async (ctx) => {
@@ -51,22 +50,13 @@ app.post(
   },
 );
 
-app.post("/debug/ctx", (ctx: Context<Auth>) => {
-  const body = JSON.stringify({
-    jwt: ctx.state.jwt,
-    sessionId: ctx.state.sessionId,
-    roomId: ctx.state.roomId,
-    userId: ctx.state.userId,
-    username: ctx.state.username,
-  });
-  return new Response(body, {
-    headers: { "Content-Type": "application/json" },
-  });
-});
 app.post("/api/public-keys", async () => {
   console.log("POST /api/public-keys");
   const handler = await import("./handlers/publicKeys.ts");
-  return handler.getPublicKeys.POST();
+  return handler.getPublicKeys.POST;
 });
-
+app.get("/api", async () => {
+    const handler = await import("./handlers/websocket.ts");
+    return handler.socketHandler.GET;
+});
 app.fsRoutes();

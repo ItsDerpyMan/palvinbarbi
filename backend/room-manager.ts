@@ -1,16 +1,16 @@
 // room-manager.ts
-import { eventBus } from "./event-bus.ts";
-import { connectionManager } from "./connection-manager.ts";
-import { Player } from "./player.ts";
-import { Room } from "./room.ts";
+import {eventBus} from "./event-bus.ts";
+import {connectionManager} from "./connection-manager.ts";
+import {Player, Status} from "./player.ts";
+import {Room} from "./room.ts";
 import {Phase} from "./scheduler.ts";
-import {database} from "../../utils/database/database.ts";
+import {database} from "../handlers/utils/database/database.ts";
+import {logger} from "./server/logger.ts";
 
 class RoomManager {
     private rooms = new Map<string, Room>();
 
     constructor() {
-        // Room Manager subscribes to events it cares about
         eventBus.subscribe("socket:message", (data) => this.handleMessage(data));
         eventBus.subscribe("socket:disconnected", (data) => this.handleDisconnect(data));
     }
@@ -25,7 +25,10 @@ class RoomManager {
             const data = payload as { roomId: string; playerId: string; username: string; };
             this.joinRoom(socketId, data.roomId, data.playerId, data.username);
         }
-
+        if (channel === "room" && event === "reconnect") {
+            const data = payload as { roomId: string; playerId: string; username: string;};
+            this.handleReconnect( socketId, data);
+        }
         if (channel.startsWith("room:") && event === "start") {
             const roomId = channel.split(":")[1];
             const data = payload as { duration?: number };
@@ -39,7 +42,25 @@ class RoomManager {
         }
 
     }
+    private handleReconnect(socketId: string, { roomId, playerId, username }: { roomId: string; playerId: string; username: string; }) {
+        const registry = connectionManager.getRegistry();
+        const conn = registry.getBySocketId(socketId);
+        if (!conn) {
+            logger.room.error(`No connection found for socketId ${socketId}`);
+            return;
+        }
+        registry.setRoom(socketId, roomId);
+        registry.setPlayer(socketId, playerId);
 
+        let room = this.rooms.get(roomId);
+        if (!room) {
+            logger.room.info(`Creating room ${roomId}`);
+            room = Room.create(roomId);
+            this.rooms.set(roomId, room);
+        }
+        
+        room.broadcast('client:reconnect', { playerId, username })
+    }
     private async handleDisconnect({ socketId: _socketId, roomId, playerId }: {
         socketId: string;
         roomId?: string;
@@ -48,11 +69,10 @@ class RoomManager {
         if (roomId && playerId) {
             const room = this.rooms.get(roomId);
             if (room) {
-                room.removePlayer(playerId!);
-
                 const hasStarted = room.getSchedulePhase() > Phase.countdown
-
                 if (!hasStarted) {
+                    room.removePlayer(playerId!);
+
                     try {
                        const { data: deletedCount, error } = await database().rpc("delete_room_membership_for_user", {
                            p_user_id: playerId,
@@ -63,13 +83,17 @@ class RoomManager {
                         if (deletedCount <= 0) throw "No room membership found.";
 
                     } catch (err) {
-                        console.error('Error deleting player room_membership: ', err);
+                        logger.room.error('Error deleting player room_membership:', err);
                     }
+                } else {
+                    const p = room.getPlayerById(playerId);
+                    if (!p) logger.room.error(`HandleDisconnect: player not found, id: ${playerId}`);
+                    else p.status = Status.offline;
                 }
                 // Clean up empty rooms
                 if (room.isEmpty()) {
                     this.rooms.delete(roomId);
-                    console.log(`Room ${roomId} removed (empty)`);
+                    logger.room.info(`Room ${roomId} removed (empty)`);
                 }
             }
         }
@@ -94,22 +118,21 @@ class RoomManager {
     }
 
     private joinRoom(socketId: string, roomId: string, playerId: string, username: string) {
-        console.log(`[Server] Player ${username} (${playerId}) joining room ${roomId}`);
+        logger.room.info(`Player ${username} (${playerId}) joining room ${roomId}`);
 
         const registry = connectionManager.getRegistry();
         const conn = registry.getBySocketId(socketId);
         if (!conn) {
-            console.error(`[Server] No connection found for socketId ${socketId}`);
+            logger.room.error(`No connection found for socketId ${socketId}`);
             return;
         }
 
-        // Update connection metadata
         registry.setPlayer(socketId, playerId);
         registry.setRoom(socketId, roomId);
 
         let room = this.rooms.get(roomId);
         if (!room) {
-            console.log(`[Server] Creating room ${roomId}`);
+            logger.room.info(`Creating room ${roomId}`);
             room = Room.create(roomId);
             this.rooms.set(roomId, room);
         }

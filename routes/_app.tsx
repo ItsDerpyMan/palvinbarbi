@@ -1,4 +1,4 @@
-import { define } from "../utils/utils.ts";
+import { define } from "../handlers/utils/utils.ts";
 import { Partial } from "fresh/runtime";
 
 export default define.page(function App({ Component }) {
