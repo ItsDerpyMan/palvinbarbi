@@ -49,5 +49,9 @@
       "template"
     ],
     "types": ["vite/client"]
+  },
+  "deploy": {
+    "org": "derpyindurstries",
+    "app": "palvinbarbi"
   }
 }

@@ -10,9 +10,9 @@ export function useQuizController(roomId: string, playerId: string, username: st
         }
 
         console.log("useQuizController - creating controller");
-        // Connect to standalone WebSocket server on port 8000
+        // Connect to WebSocket on same host/port as current page
         const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
-        const url = `${wsProtocol}//${location.hostname}:8000/api`;
+        const url = `${wsProtocol}//${location.host}/api`;
         console.log("WebSocket URL:", url);
 
         return new QuizControllerLogic(url, roomId, playerId, username);

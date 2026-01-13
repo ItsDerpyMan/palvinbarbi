@@ -60,10 +60,6 @@ export default define.page<typeof handler>((props)=> {
     const data = props.data as { roomId: string; playerId: string; username: string };
     return (
         <>
-            <h2 class="text-2xl font-bold mb-4">Room: {data.roomId}</h2>
-            <p class="text-white-600 mb-2">Welcome, {data.username}!</p>
-            <p class="text-white-600 mb-2">Player ID: {data.playerId}</p>
-
             <main class="mt-8">
                 <QuizController
                     roomId={data.roomId}

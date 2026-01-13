@@ -12,9 +12,9 @@ export default define.page(function App({ Component }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Join a room</title>
           <script dangerouslySetInnerHTML={{
-              __html: `window.__SUPABASE__ = {             
-              url: "${supabaseUrl}",                     
-              key: "${supabaseKey}"                      
+              __html: `window.__SUPABASE__ = {
+              url: "${supabaseUrl}",
+              key: "${supabaseKey}"
             };`
           }} />
       </head>
