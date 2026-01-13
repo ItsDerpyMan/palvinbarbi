@@ -1,6 +1,6 @@
-import { define } from "../utils/utils.ts";
+import { define } from "../handlers/utils/utils.ts";
 import { Partial } from "fresh/runtime";
-import { database } from "../utils/database/database.ts";
+import { database } from "../handlers/utils/database/database.ts";
 import { UsernameInput } from "../components/UsernameInput.tsx";
 import RoomIsland from "../islands/RoomIsland.tsx";
 
@@ -20,7 +20,7 @@ export default define.page(function HomePage(props) {
     const rooms = data?.rooms ?? [];
 
     return (
-        <main class="px-4 py-8 mx-auto fresh-gradient min-h-screen bg-[url(/images/bg-plavin.jpg)] bg-cover">
+        <main class="px-4 py-8 mx-auto fresh-gradient min-h-screen bg-cover">
             <h1> <span id="would">Would</span> You <span id="rather">Rather</span></h1>
 
             <section class="max-w-screen-md mx-auto">

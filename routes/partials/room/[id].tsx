@@ -1,6 +1,6 @@
 import { Partial } from "fresh/runtime";
 import RoomIsland from "../../../islands/RoomIsland.tsx";
-import {define} from "../../../utils/utils.ts";
+import {define} from "../../../handlers/utils/utils.ts";
 
 export default define.page(({params}) => {
     return (
