@@ -98,7 +98,10 @@ export class QuizControllerLogic {
             }),
             clientEventBus.subscribe("client:game_over", ({ roundId, round }) => {
                 console.log("[QuizController] Game over", roundId, round);
-                this.destroy()
+                this.destroy();
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 2000);
             }),
         );
     }

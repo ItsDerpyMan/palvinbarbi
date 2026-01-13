@@ -1,9 +1,10 @@
 #!/usr/bin/env -S deno run -A --env
 // serve.ts - Unified development server with CLI
 
-import { app } from "./main.tsx";
 import { cli } from "./backend/server/index.ts";
 import { logger } from "./backend/server/logger.ts";
+import { connectionManager } from "./backend/connection-manager.ts";
+import "./backend/room-manager.ts";
 
 // Helper to stream process output to logger
 function streamOutput(
@@ -31,16 +32,35 @@ function streamOutput(
 async function main(): Promise<void> {
     const noCli = Deno.args.includes("--no-cli");
 
-    logger.sys.info("Starting servers...");
+    // Start WebSocket server on port 8000 (Vite proxies /api to here)
+    logger.ws.info("Starting WebSocket server on port 8000...");
+    Deno.serve({ port: 8000, hostname: "0.0.0.0" }, (req) => {
+        const upgrade = req.headers.get("upgrade") || "";
+        if (upgrade.toLowerCase() !== "websocket") {
+            return new Response("Expected WebSocket", { status: 426 });
+        }
 
-    // Start Fresh backend directly (handles WebSocket on port 8000)
-    logger.ws.info("Starting backend on port 8000...");
-    app.listen({ port: 8000, hostname: "0.0.0.0" });
-    logger.ws.info("Backend ready on http://0.0.0.0:8000");
+        const url = new URL(req.url);
+        const socketId = url.searchParams.get("socketId");
+        logger.ws.info("WS upgrade", socketId ? `(reconnect: ${socketId})` : "(new)");
 
-    // Spawn Vite for frontend (port 5173)
+        const { socket, response } = Deno.upgradeWebSocket(req);
+        socket.onopen = () => {
+            if (socketId) {
+                connectionManager.handlesReconnection(socket, socketId);
+            } else {
+                connectionManager.handlesNewConnection(socket);
+            }
+        };
+        socket.onerror = (e) => logger.ws.error("WS error:", e);
+        socket.onclose = () => logger.ws.info("WS closed");
+        return response;
+    });
+
+    logger.sys.info("Starting Vite dev server...");
+
     const viteProcess = new Deno.Command("deno", {
-        args: ["run", "-A", "--env", "npm:vite"],
+        args: ["run", "-A", "--env", "vite"],
         stdin: "null",
         stdout: "piped",
         stderr: "piped",
@@ -50,9 +70,9 @@ async function main(): Promise<void> {
     streamOutput(viteProcess.stderr.getReader(), (msg) => logger.page.error(msg));
 
     // Wait for Vite to start
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    logger.sys.info("All servers started (Backend:8000 + Vite:5173)");
+    logger.sys.info("Ready: Vite :5173, WebSocket :8000 (proxied via /api)");
 
     // Cleanup function
     const cleanup = () => {

@@ -55,8 +55,8 @@ app.post("/api/public-keys", async () => {
   const handler = await import("./handlers/publicKeys.ts");
   return handler.getPublicKeys.POST;
 });
-app.get("/api", async () => {
-    const handler = await import("./handlers/websocket.ts");
-    return handler.socketHandler.GET;
-});
+//app.get("/api", async () => {
+//    const handler = await import("./handlers/websocket.ts");
+//    return handler.socketHandler.GET;
+//});
 app.fsRoutes();

@@ -103,7 +103,7 @@ export class Scheduler {
             this.schedule('outro', this.config.outroDuration, () => {
                 if (this.state.roundNumber >= this.config.maxRounds) { // maxRounds
                     this.transition(Phase.stats);
-                    this.schedule('end', this.config.revealDuration, this.scheduleGameOver);
+                    this.schedule('end', this.config.revealDuration, () => this.scheduleGameOver());
                 } else this.startNextRound();
             });
         })

@@ -2,6 +2,7 @@ import { computed } from "@preact/signals";
 import { State } from "./hooks/QuizController.class.ts";
 import { useQuizController } from "./hooks/useQuizController.ts";
 import Layout from "../components/view/Layout.tsx";
+import "../assets/styles.css";
 import InitializingView from "../components/view/InitializingView.tsx";
 import LobbyView from "../components/view/LobbyView.tsx";
 import CountdownView from "../components/view/CountdownView.tsx";

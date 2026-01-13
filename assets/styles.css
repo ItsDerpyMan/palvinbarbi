@@ -3,10 +3,6 @@
   themes: light --default, dark --prefersdark;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ===== Reusable Quiz Component Styles ===== */
 @layer components {
   /* View container - used by all view views */
@@ -55,11 +51,6 @@
   .quiz-option-box:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
-}
-
-/* ===== Legacy Styles ===== */
-.fresh-gradient {
-
 }
 
 .card {

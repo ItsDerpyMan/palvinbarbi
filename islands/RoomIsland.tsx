@@ -3,7 +3,7 @@ import { useEffect } from "preact/hooks";
 import { Button } from "../components/Button.tsx";
 import { TimeStamp } from "../components/TimeStamp.tsx";
 import { PlayerCount } from "../components/PlayerCount.tsx";
-import {database} from "../handlers/utils/database/database.client.ts";
+import "../assets/styles.css";
 
 interface RoomData {
     id: string;
