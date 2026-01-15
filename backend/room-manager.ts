@@ -13,22 +13,16 @@ class RoomManager {
     constructor() {
         eventBus.subscribe("socket:message", (data) => this.handleMessage(data));
         eventBus.subscribe("socket:disconnected", (data) => this.handleDisconnect(data));
+        eventBus.subscribe("socket:connected", ({ socketId, ...data}) => this.handleConnection(socketId, data));
+        eventBus.subscribe("socket:reconnect", (data) => this.handleReconnect(data))
     }
 
     private handleMessage({ socketId, channel, event, payload }: {
-        socketId: string;
+        socketId?: string;
         channel: string;
         event: string;
         payload: unknown;
     }) {
-        if (channel === "room" && event === "join") {
-            const data = payload as { roomId: string; playerId: string; username: string; };
-            this.joinRoom(socketId, data.roomId, data.playerId, data.username);
-        }
-        if (channel === "room" && event === "reconnect") {
-            const data = payload as { roomId: string; playerId: string; username: string;};
-            this.handleReconnect( socketId, data);
-        }
         if (channel.startsWith("room:") && event === "start") {
             const roomId = channel.split(":")[1];
             const data = payload as { duration?: number };
@@ -38,27 +32,18 @@ class RoomManager {
         if (channel.startsWith("room:") && event === "respond") {
             const roomId = channel.split(":")[1];
             const data = payload as { answer: boolean };
-            this.handleAnswer(roomId, socketId, data.answer);
+            if (socketId) this.handleAnswer(roomId, socketId, data.answer);
+            else logger.ws.error("No socket id found. event: ", event);
         }
-
     }
-    private handleReconnect(socketId: string, { roomId, playerId, username }: { roomId: string; playerId: string; username: string; }) {
-        const registry = connectionManager.getRegistry();
-        const conn = registry.getBySocketId(socketId);
-        if (!conn) {
-            logger.room.error(`No connection found for socketId ${socketId}`);
-            return;
-        }
-        registry.setRoom(socketId, roomId);
-        registry.setPlayer(socketId, playerId);
-
+    private handleReconnect({ roomId, playerId, username }: { roomId: string; playerId: string; username: string; }) {
         let room = this.rooms.get(roomId);
         if (!room) {
             logger.room.info(`Creating room ${roomId}`);
             room = Room.create(roomId);
             this.rooms.set(roomId, room);
         }
-        
+
         room.broadcast('client:reconnect', { playerId, username })
     }
     private async handleDisconnect({ socketId: _socketId, roomId, playerId }: {
@@ -117,18 +102,8 @@ class RoomManager {
         room.submitRoundAnswer(conn.playerId, answer);
     }
 
-    private joinRoom(socketId: string, roomId: string, playerId: string, username: string) {
+    private handleConnection(socketId: string, { roomId, playerId, username }: { roomId: string; playerId: string; username: string; }) {
         logger.room.info(`Player ${username} (${playerId}) joining room ${roomId}`);
-
-        const registry = connectionManager.getRegistry();
-        const conn = registry.getBySocketId(socketId);
-        if (!conn) {
-            logger.room.error(`No connection found for socketId ${socketId}`);
-            return;
-        }
-
-        registry.setPlayer(socketId, playerId);
-        registry.setRoom(socketId, roomId);
 
         let room = this.rooms.get(roomId);
         if (!room) {

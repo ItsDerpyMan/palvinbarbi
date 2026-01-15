@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "preact/hooks";
-import { QuizControllerLogic } from "./QuizController.class.ts";
+import {QuizControllerLogic} from "./QuizController.class.ts";
 
 export function useQuizController(roomId: string, playerId: string, username: string) {
     // Create controller lazily only on client side
@@ -8,8 +8,6 @@ export function useQuizController(roomId: string, playerId: string, username: st
         if (typeof window === "undefined") {
             return null;
         }
-
-        console.log("useQuizController - creating controller");
         // Connect to WebSocket on same host/port as current page
         const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
         const url = `${wsProtocol}//${location.host}/api`;

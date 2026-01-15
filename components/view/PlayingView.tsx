@@ -13,9 +13,9 @@ const PlayingView: FunctionComponent<PlayingViewProps> = ({ controller, leftOpti
     return (
         <>
             {/* Question */}
-            <div class="card bg-gradient-to-r from-primary to-secondary text-primary-content p-6 shadow-xl">
+            <div class="card bg-gradient-to-r from-primary to-secondary text-primary-content mr-auto ml-auto p-6 shadow-xl">
                 <p class="text-2xl font-bold text-center">
-                    {controller.prompt.value?.prompt}
+                    {controller.prompt.value?.prompt ?? "..."}
                 </p>
             </div>
 

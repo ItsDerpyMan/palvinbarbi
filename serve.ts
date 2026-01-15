@@ -39,15 +39,20 @@ async function main(): Promise<void> {
         if (upgrade.toLowerCase() !== "websocket") {
             return new Response("Expected WebSocket", { status: 426 });
         }
-
-        const url = new URL(req.url);
-        const socketId = url.searchParams.get("socketId");
-        logger.ws.info("WS upgrade", socketId ? `(reconnect: ${socketId})` : "(new)");
+        type Params = { socketId: string, roomId: string, playerId: string, username: string };
+        const params = (<T extends Record<string, string>>(): Partial<T> => {
+            const url = new URL(req.url);
+            return Object.fromEntries(url.searchParams) as Partial<T>;
+        })<Params>();
 
         const { socket, response } = Deno.upgradeWebSocket(req);
+        const { socketId } = params;
+        logger.ws.info("WS upgrade", socketId ? `(reconnect: ${socketId})` : "(new)");
+
         socket.onopen = () => {
             if (socketId) {
-                connectionManager.handlesReconnection(socket, socketId);
+                const { roomId, playerId, username } = params;
+                connectionManager.handlesReconnection(socket, socketId, roomId!, playerId!, username!);
             } else {
                 connectionManager.handlesNewConnection(socket);
             }

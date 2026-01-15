@@ -9,7 +9,7 @@ interface StoredSession {
     username: string;
 }
 
-interface ConnectionConfig {
+export interface ConnectionConfig {
     url: string;
     roomId: string;
     playerId: string;
@@ -27,7 +27,7 @@ class ClientConnectionManager {
     // localStorage helpers
     private saveSession(session: StoredSession): void {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
             console.log("[ClientWS] Session saved to localStorage:", session);
         } catch (e) {
             console.warn("[ClientWS] Failed to save session:", e);
@@ -36,7 +36,7 @@ class ClientConnectionManager {
 
     private loadSession(): StoredSession | null {
         try {
-            const data = localStorage.getItem(STORAGE_KEY);
+            const data = sessionStorage.getItem(STORAGE_KEY);
             if (data) {
                 const session = JSON.parse(data) as StoredSession;
                 console.log("[ClientWS] Session loaded from localStorage:", session);
@@ -50,20 +50,85 @@ class ClientConnectionManager {
 
     private clearSession(): void {
         try {
-            localStorage.removeItem(STORAGE_KEY);
+            sessionStorage.removeItem(STORAGE_KEY);
             console.log("[ClientWS] Session cleared from localStorage");
         } catch (e) {
             console.warn("[ClientWS] Failed to clear session:", e);
         }
     }
 
-    // Check if we have a stored session for this room
-    hasStoredSession(roomId: string): boolean {
+    anonymConnect(config: ConnectionConfig): void {
         const session = this.loadSession();
-        return session !== null && session.roomId === roomId;
-    }
 
-    connect(config: ConnectionConfig) {
+        const url = new URL(config.url);
+        if (session) {
+            url.searchParams.set("socketId", session!.socketId);
+            url.searchParams.append("room", config.roomId);
+            url.searchParams.append("user", config.playerId);
+            url.searchParams.append("username", config.username);
+            console.log("[ClientWS] Reconnecting with stored socketId:", session!.socketId);
+        }
+
+        console.log("[ClientWS] Attempting to connect to:", url);
+        console.log("[ClientWS] Config:", { roomId: config.roomId, playerId: config.playerId, username: config.username });
+
+        this.socket = new WebSocket(url);
+
+        this.socket.onopen = () => {
+            console.log("[ClientWS] ✅ Connected successfully!");
+            this.reconnectAttempts = 0;
+
+            clientEventBus.publish("local:connected", {});
+        };
+
+        this.socket.onmessage = (e) => {
+            console.log("[ClientWS] Message received:", e.data);
+            const msg = JSON.parse(e.data);
+
+            // Handle socket:assigned message - store the socketId
+            if (msg.type === "socket:assigned" && msg.payload?.socketId) {
+                const assignedSocketId = msg.payload.socketId as string;
+                this.socketId = assignedSocketId;
+                console.log("[ClientWS] Received socketId:", this.socketId);
+
+                // Save session to localStorage
+                this.saveSession({
+                    socketId: assignedSocketId,
+                    roomId: config.roomId,
+                    playerId: config.playerId,
+                    username: config.username,
+                });
+            }
+
+            clientEventBus.publish(msg.type, msg.payload);
+        };
+
+        this.socket.onclose = (e) => {
+            console.log("[ClientWS] ❌ Disconnected - Code:", e.code, "Reason:", e.reason, "Clean:", e.wasClean);
+            clientEventBus.publish("local:disconnected", {});
+
+            // Don't clear session on disconnect - we want to reconnect
+            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.reconnectAttempts++;
+                console.log(`[ClientWS] Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                setTimeout(() => {
+                    if (this.config) {
+                        this.connect(this.config);
+                    }
+                }, this.reconnectDelay * this.reconnectAttempts);
+            } else {
+                console.error("[ClientWS] Max reconnection attempts reached");
+                clientEventBus.publish("local:reconnect-failed", {});
+            }
+        };
+
+        this.socket.onerror = (e) => {
+            console.error("[ClientWS] ⚠️ WebSocket error event fired");
+            console.error("[ClientWS] Error details:", e);
+            clientEventBus.publish("local:error", { error: e });
+        };
+    }
+    connect(config: ConnectionConfig): void {
         this.config = config;
 
         // Check for existing session
@@ -76,6 +141,9 @@ class ClientConnectionManager {
         const url = new URL(config.url);
         if (isReconnect && storedSession.socketId) {
             url.searchParams.set("socketId", storedSession.socketId);
+            url.searchParams.append("room", config.roomId);
+            url.searchParams.append("user", config.playerId);
+            url.searchParams.append("username", config.username);
             console.log("[ClientWS] Reconnecting with stored socketId:", storedSession.socketId);
         }
 
@@ -161,6 +229,7 @@ class ClientConnectionManager {
     }
 
     disconnect() {
+        console.log("[ClientWS] Disconnected");
         if (this.socket) {
             this.reconnectAttempts = this.maxReconnectAttempts; // Prevent reconnection
             this.socket.close();

@@ -26,13 +26,13 @@ export default function Controller({ roomId, playerId, username }: ControllerPro
     const leftOption = computed(() => {
         if (!controller?.prompt.value) return "";
         const { prompt, l_index, r_index } = controller.prompt.value;
-        return prompt.slice(l_index, r_index - 4).trim();
+        return prompt.slice(l_index, r_index - 5).trim();
     });
 
     const rightOption = computed(() => {
         if (!controller?.prompt.value) return "";
         const { prompt, r_index } = controller.prompt.value;
-        return prompt.slice(r_index).trim();
+        return prompt.slice(r_index-2).trim();
     });
 
     // Loading state - no controller yet

@@ -11,17 +11,39 @@ interface Metadata {
 }
 interface Connection {
     reg: Registry
-    handlesNewConnection(socket: WebSocket): void;
+    HandlesAnonymConnection(socket: WebSocket): void;
+    handlesReconnection(socket: WebSocket, socketId: string, roomId: string, playerId: string, username: string): void;
+    handlesNewConnection(socket: WebSocket, roomId: string, playerId: string, username: string): void;
     getRegistry(): Registry;
 }
 
 class ConnectionManager implements Connection {
     reg = new Registry();
 
-    handlesReconnection(socket: WebSocket, socketId: string): void {
+    handlesAnonymConnection(socket: WebSocket): void {
+        socket.onmessage = (e) => {
+            const msg = JSON.parse(e.data);
+            logger.ws.info(`Received message from anon:`, msg);
+            eventBus.publish("socket:message", {
+                socketId: undefined,
+                channel: msg.channel,
+                event: msg.event,
+                payload: msg.payload,
+            });
+        }
+    }
+    handlesReconnection(socket: WebSocket, socketId: string, roomId: string, playerId: string, username: string): void {
         this.reg.add(socketId, socket);
+        const registry = connectionManager.getRegistry();
+        const conn = registry.getBySocketId(socketId);
+        if (!conn) {
+            logger.room.error(`No connection found for socketId ${socketId}`);
+            return;
+        }
+        registry.setRoom(socketId, roomId);
+        registry.setPlayer(socketId, playerId);
 
-        eventBus.publish("socket:reconnect", { socketId });
+        eventBus.publish("socket:reconnect", { socketId, roomId, playerId, username});
 
         socket.onmessage = (e) => {
             const msg = JSON.parse(e.data);
@@ -34,8 +56,6 @@ class ConnectionManager implements Connection {
             });
     };
         socket.onclose = () => {
-            const conn = this.reg.getBySocketId(socketId);
-
             eventBus.publish("socket:disconnected", {
                 socketId,
                 playerId: conn?.playerId,
@@ -45,18 +65,22 @@ class ConnectionManager implements Connection {
             this.reg.remove(socketId);
         };
     }
-    handlesNewConnection(socket: WebSocket): void {
+    handlesNewConnection(socket: WebSocket, roomId: string, playerId: string, username: string): void {
         const socketId: string = crypto.randomUUID();
 
         this.reg.add(socketId, socket);
 
-        // Send socketId to client so it can store it for reconnection
-        socket.send(JSON.stringify({
-            type: "socket:assigned",
-            payload: { socketId }
-        }));
+        const registry = connectionManager.getRegistry();
+        const conn = registry.getBySocketId(socketId);
+        if (!conn) {
+            logger.room.error(`No connection found for socketId ${socketId}`);
+            return;
+        }
 
-        eventBus.publish("socket:connected", { socketId });
+        registry.setPlayer(socketId, playerId);
+        registry.setRoom(socketId, roomId);
+
+        eventBus.publish("socket:connected", { socketId, roomId, playerId, username });
 
         socket.onmessage = (e) => {
             const msg = JSON.parse(e.data);

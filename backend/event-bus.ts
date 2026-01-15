@@ -5,16 +5,22 @@ import {Phase} from "./scheduler.ts";
 
 export interface EventMap {
     "socket:message": {
-        socketId: string;
+        socketId?: string;
         channel: string;
         event: string;
         payload: unknown;
     };
     "socket:connected": {
         socketId: string;
+        roomId: string;
+        playerId: string;
+        username: string;
     };
     "socket:reconnect": {
         socketId: string;
+        roomId: string;
+        playerId: string;
+        username: string;
     };
     "socket:disconnected": {
         socketId: string;
