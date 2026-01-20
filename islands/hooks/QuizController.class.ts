@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
 import {ConnectionConfig} from "../../backend/client-connection-manager.ts";
-import {Controller} from "./Controller.interface.ts";
+import {Controller, ControllerOptions} from "./Controller.interface.ts";
 
 export enum State {
     initializing,
@@ -33,8 +33,8 @@ export class QuizControllerLogic extends Controller {
     private roomId: string;
     private playerId: string;
 
-    constructor(config: ConnectionConfig) {
-        super(config);
+    constructor(config: ConnectionConfig, options: ControllerOptions) {
+        super(config, options);
         this.roomId = config.roomId;
         this.playerId = config.playerId;
 
@@ -49,6 +49,16 @@ export class QuizControllerLogic extends Controller {
             { answer: pick }
         );
         this.hasAnswered.value = true;
+    }
+    protected override onConnected(): void {
+
+    }
+
+    protected override onDisconnect(): void {
+
+    }
+
+    protected override onError(err: Error): void {
     }
 
     private subscribeToEvents(): void {
