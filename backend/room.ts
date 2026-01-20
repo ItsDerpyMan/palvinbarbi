@@ -13,6 +13,7 @@ type Scores = { playerId: string, score: number }[];
 export class Room {
     private id: string;
     private players: Player[];
+    private totalPlayers: number;
     private scheduler: Scheduler;
     private config: RoomConfig = {
         minPlayers: 2,
@@ -28,6 +29,7 @@ export class Room {
     private constructor(id: string, config?: RoomConfig) {
         this.id = id;
         this.players = [];
+        this.totalPlayers = 20;
         if (config) this.config = config;
 
         this.scheduler = new Scheduler(
@@ -61,6 +63,13 @@ export class Room {
             this.players.splice(index, 1);
             this.scheduler.onPlayerLeft(this.players.length);
         }
+    }
+    getTotalPlayers(): number {
+        return this.totalPlayers;
+    }
+    setTotalPlayers(num: number): void {
+        if(num <= 1) throw new Error("Total player count cant be smaller or equal to 1.");
+        this.totalPlayers = num;
     }
 
     // Delegate to scheduler

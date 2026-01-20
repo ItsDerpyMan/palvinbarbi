@@ -13,7 +13,7 @@ export function useQuizController(roomId: string, playerId: string, username: st
         const url = `${wsProtocol}//${location.host}/api`;
         console.log("WebSocket URL:", url);
 
-        return new QuizControllerLogic(url, roomId, playerId, username);
+        return new QuizControllerLogic({ url, roomId, playerId, username });
     }, [roomId, playerId, username]);
 
     // Cleanup on unmount

@@ -1,4 +1,4 @@
-import QuizController from "../../../islands/QuizController.tsx";
+import QuizController from "../../../islands/Quiz.tsx";
 import { define } from "../../../handlers/utils/utils.ts";
 import { databaseWithKey } from "../../../handlers/utils/database/database.ts";
 import { deleteAuthCookies } from "../../../handlers/utils/cookies.ts";

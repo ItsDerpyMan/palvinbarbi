@@ -136,6 +136,13 @@ export class Scheduler {
             callback();
         }, delay));
     }
+    private emitStats() {
+        this.emit("client:room-stats", {
+            players: this.room.getPlayers(),
+            playerCount:  this.room.getPlayerCount(),
+            totalPlayers: this.room.getTotalPlayers(),
+        })
+    }
 
     private stopCountdown() {
         if (this.countdownInterval) {

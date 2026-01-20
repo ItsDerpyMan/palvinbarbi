@@ -2,6 +2,7 @@
 
 // Define all your events and their payload types here
 import {Phase} from "./scheduler.ts";
+import {Player} from "./player.ts";
 
 export interface EventMap {
     "socket:message": {
@@ -108,14 +109,20 @@ export interface ClientEventMap {
     "client:remaining_time": {
         timeleft: number;
     };
+    "client:room-stats": {
+        players: Player[];
+        playerCount: number;
+        totalPlayers: number;
+    };
+    "respond": { answer: boolean};
     // local events
     "local:connected": Record<string, never>;
     "local:disconnected": Record<string, never>;
     "local:error": { error: Event };
     "local:reconnect-failed": Record<string, never>;
 }
-
-type Handler<T> = (payload: T) => void | Promise<void>;
+export interface Events extends ClientEventMap, EventMap {};
+export type Handler<T> = (payload: T) => void | Promise<void>;
 
 export class EventBus<E> {
     private handlers = new Map<string, Set<Handler<any>>>();
