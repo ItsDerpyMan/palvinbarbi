@@ -16,11 +16,11 @@ export enum State {
 
 export class QuizControllerLogic extends Controller {
     readonly state = signal<State>(State.initializing);
-    readonly timeleft = signal(0);
+    readonly timeLeft = signal(0);
 
     readonly hasAnswered = signal(false);
     readonly count = signal<number>(0);
-    readonly totalplayers = signal<number>(0);
+    readonly totalPlayers = signal<number>(0);
     readonly results = signal<any[]>([]);
     readonly round = signal<number>(0);
 
@@ -50,16 +50,6 @@ export class QuizControllerLogic extends Controller {
         );
         this.hasAnswered.value = true;
     }
-    protected override onConnected(): void {
-
-    }
-
-    protected override onDisconnect(): void {
-
-    }
-
-    protected override onError(err: Error): void {
-    }
 
     private subscribeToEvents(): void {
         this.subscribe("local:connected", () => {
@@ -69,20 +59,20 @@ export class QuizControllerLogic extends Controller {
         this.subscribe("local:disconnected", () => {
             console.log("[QuizController] Disconnected - back to initializing");
             this.state.value = State.initializing;
-            this.timeleft.value = 0;
+            this.timeLeft.value = 0;
         });
 
         this.subscribe("client:transition", ({ phase, round, timeleft }) => {
             console.log(`[QuizController] Transition to phase ${phase}, round ${round}`);
             this.state.value = phase as unknown as State;
             this.round.value = round;
-            this.timeleft.value = timeleft ?? 0;
+            this.timeLeft.value = timeleft ?? 0;
         });
 
         this.subscribe("client:cancel", ({ reason }) => {
             console.log(`[QuizController] Game cancelled: ${reason}`);
             this.state.value = State.lobby;
-            this.timeleft.value = 0;
+            this.timeLeft.value = 0;
         });
 
         this.subscribe("client:round-start", ({ data }) => {
@@ -94,7 +84,7 @@ export class QuizControllerLogic extends Controller {
 
         this.subscribe("client:round-end", () => {
             console.log(`[QuizController] Round ended`);
-            this.timeleft.value = 0;
+            this.timeLeft.value = 0;
         });
 
         this.subscribe("client:round-stats", ({ results }) => {
@@ -104,17 +94,17 @@ export class QuizControllerLogic extends Controller {
 
         this.subscribe("client:submit-state", ({ answerCount, totalPlayers }) => {
             this.count.value = answerCount;
-            this.totalplayers.value = totalPlayers;
+            this.totalPlayers.value = totalPlayers;
         });
 
         this.subscribe("client:state", ({ phase, round, playerCount }) => {
             this.state.value = phase as unknown as State;
             this.round.value = round;
-            this.totalplayers.value = playerCount;
+            this.totalPlayers.value = playerCount;
         });
 
         this.subscribe("client:remaining_time", ({ timeleft }) => {
-            this.timeleft.value = timeleft;
+            this.timeLeft.value = timeleft;
         });
 
         this.subscribe("client:game_over", ({ roundId, round }) => {

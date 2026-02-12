@@ -70,7 +70,7 @@ export abstract class Controller implements IController {
         try {
             this._isConnecting = true;
 
-            this.onConnectionInitiated();
+            this.onConnectionInitiated(); // TODO
 
             if (this._isAnonymous) {
                 clientConnectionManager.anonymConnect(config);
@@ -112,6 +112,7 @@ export abstract class Controller implements IController {
     protected abstract setupEventListeners(): void;
     protected onConnectionInitiated(): void {
         if(this._isAnonymous) return;
+        // TODO
     }
     subscribe(event: keyof ClientEventMap, handler: Handler<any>): void | Promise<void> {
         try {
